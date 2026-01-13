@@ -1,4 +1,4 @@
-package org.example.categoty;
+package org.example.finance.categoty;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

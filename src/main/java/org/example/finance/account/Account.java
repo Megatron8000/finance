@@ -1,4 +1,4 @@
-package org.example.account;
+package org.example.finance.account;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -6,7 +6,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import lombok.Getter;
 import lombok.Setter;
-import org.example.common.AccountType;
+import org.example.finance.common.AccountType;
 import org.springframework.data.annotation.Id;
 
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package org.example.common;
+package org.example.finance.common;
 
 public enum AccountType {
     CASH, CARD

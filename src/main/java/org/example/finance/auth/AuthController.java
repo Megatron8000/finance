@@ -1,8 +1,8 @@
-package org.example.auth;
+package org.example.finance.auth;
 
 import lombok.RequiredArgsConstructor;
-import org.example.user.User;
-import org.example.user.UserRepository;
+import org.example.finance.user.User;
+import org.example.finance.user.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

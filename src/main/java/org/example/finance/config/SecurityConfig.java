@@ -1,4 +1,4 @@
-package org.example.config;
+package org.example.finance.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

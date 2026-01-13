@@ -1,4 +1,4 @@
-package org.example.savings;
+package org.example.finance.savings;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

@@ -1,4 +1,4 @@
-package org.example.auth;
+package org.example.finance.auth;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

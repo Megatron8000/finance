@@ -1,4 +1,4 @@
-package org.example.common;
+package org.example.finance.common;
 
 public enum TransactionType {
     INCOME, EXPENSE

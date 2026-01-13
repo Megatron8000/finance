@@ -1,9 +1,9 @@
-package org.example.transaction;
+package org.example.finance.transaction;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.example.common.TransactionType;
+import org.example.finance.common.TransactionType;
 import org.springframework.data.annotation.Id;
 
 import java.math.BigDecimal;

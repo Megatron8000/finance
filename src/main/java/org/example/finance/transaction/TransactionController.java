@@ -1,4 +1,4 @@
-package org.example.transaction;
+package org.example.finance.transaction;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

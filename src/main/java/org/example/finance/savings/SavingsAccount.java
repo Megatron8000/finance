@@ -1,4 +1,4 @@
-package org.example.savings;
+package org.example.finance.savings;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

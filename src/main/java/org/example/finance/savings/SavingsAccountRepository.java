@@ -1,4 +1,4 @@
-package org.example.savings;
+package org.example.finance.savings;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

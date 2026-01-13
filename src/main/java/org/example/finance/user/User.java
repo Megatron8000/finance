@@ -1,4 +1,4 @@
-package org.example.user;
+package org.example.finance.user;
 
 import jakarta.persistence.*;
 import lombok.Getter;

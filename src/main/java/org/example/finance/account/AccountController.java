@@ -1,4 +1,4 @@
-package org.example.account;
+package org.example.finance.account;
 
 
 import lombok.RequiredArgsConstructor;

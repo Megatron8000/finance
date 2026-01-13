@@ -1,4 +1,4 @@
-package org.example.categoty;
+package org.example.finance.categoty;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

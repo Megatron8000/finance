@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006
+      author: finance-app
+      changes:
+        - insert:
+            tableName: categories
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: "Зарплата" }
+              - column: { name: type, value: "INCOME" }
+              - column: { name: is_system, valueBoolean: true }
+
+        - insert:
+            tableName: categories
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: "Продажа" }
+              - column: { name: type, value: "INCOME" }
+              - column: { name: is_system, valueBoolean: true }
+
+        - insert:
+            tableName: categories
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: "Подарок" }
+              - column: { name: type, value: "INCOME" }
+              - column: { name: is_system, valueBoolean: true }
+
+        - insert:
+            tableName: categories
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: "Продукты питания" }
+              - column: { name: type, value: "EXPENSE" }
+              - column: { name: is_system, valueBoolean: true }
+
+        - insert:
+            tableName: categories
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: "Расходы на питомцев" }
+              - column: { name: type, value: "EXPENSE" }
+              - column: { name: is_system, valueBoolean: true }
+
+        - insert:
+            tableName: categories
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: "Коммунальные платежи" }
+              - column: { name: type, value: "EXPENSE" }
+              - column: { name: is_system, valueBoolean: true }
+
+        - insert:
+            tableName: categories
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: "Обслуживание автомобиля" }
+              - column: { name: type, value: "EXPENSE" }
+              - column: { name: is_system, valueBoolean: true }

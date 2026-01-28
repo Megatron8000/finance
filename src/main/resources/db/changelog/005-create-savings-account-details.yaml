@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-savings-account-details
+      author: finance-app
+      changes:
+        - createTable:
+            tableName: savings_account_details
+            columns:
+              - column:
+                  name: account_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+
+              - column:
+                  name: interest_rate
+                  type: DECIMAL(5,2)
+
+              - column:
+                  name: start_date
+                  type: DATE
+
+              - column:
+                  name: end_date
+                  type: DATE
+
+              - column:
+                  name: last_capitalization_date
+                  type: DATE
+
+        - addForeignKeyConstraint:
+            constraintName: fk_savings_account_account
+            baseTableName: savings_account_details
+            baseColumnNames: account_id
+            referencedTableName: accounts
+            referencedColumnNames: id

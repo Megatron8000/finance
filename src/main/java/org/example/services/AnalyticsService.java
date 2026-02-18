@@ -14,6 +14,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Сервис аналитики пользователя.
+ * Содержит бизнес-логику для расчёта агрегированных данных.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -22,22 +26,27 @@ public class AnalyticsService {
     private final TransactionRepository transactionRepository;
 
     /**
-     * Возвращает общий баланс пользователя по всем счетам
+     * Возвращает общий баланс пользователя по всем транзакциям.
+     * Если транзакций нет — возвращается BigDecimal.ZERO.
      */
     public BigDecimal getTotalBalance(UUID userId) {
         Objects.requireNonNull(userId, "userId must not be null");
 
-        return transactionRepository.calculateTotalBalance(userId);
+        BigDecimal total = transactionRepository.calculateTotalBalance(userId);
+
+        // SUM в SQL возвращает null если нет строк
+        return total != null ? total : BigDecimal.ZERO;
     }
 
     /**
-     * Возвращает дневную статистику доходов и расходов
+     * Возвращает дневную статистику доходов и расходов за период.
      */
     public List<DailyStats> getDailyStats(
             UUID userId,
             LocalDate from,
             LocalDate to
     ) {
+        Objects.requireNonNull(userId, "userId must not be null");
         validatePeriod(from, to);
 
         return transactionRepository.getDailyStats(
@@ -48,7 +57,7 @@ public class AnalyticsService {
     }
 
     /**
-     * Данные для круговой диаграммы по категориям
+     * Возвращает данные для круговой диаграммы по категориям.
      */
     public List<PieChartItem> getPieChart(
             UUID userId,
@@ -56,7 +65,9 @@ public class AnalyticsService {
             LocalDate from,
             LocalDate to
     ) {
+        Objects.requireNonNull(userId, "userId must not be null");
         Objects.requireNonNull(type, "transaction type must not be null");
+
         validatePeriod(from, to);
 
         return transactionRepository.getPieChartData(
@@ -67,6 +78,9 @@ public class AnalyticsService {
         );
     }
 
+    /**
+     * Валидирует корректность периода.
+     */
     private void validatePeriod(LocalDate from, LocalDate to) {
         Objects.requireNonNull(from, "from date must not be null");
         Objects.requireNonNull(to, "to date must not be null");

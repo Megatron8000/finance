@@ -1,6 +1,7 @@
 package org.example.services;
 
 import lombok.RequiredArgsConstructor;
+import org.example.dto.account.AccountResponse;
 import org.example.entity.Account;
 import org.example.entity.SavingsAccountDetails;
 import org.example.enums.AccountType;
@@ -71,8 +72,22 @@ public class AccountService {
      * @return список счетов
      */
     @Transactional(readOnly = true)
-    public List<Account> getAccounts(UUID userId) {
-        return accountRepository.findByUserId(userId);
+    public List<AccountResponse> getAccounts(UUID userId) {
+
+        List<Account> accounts = accountRepository.findByUserId(userId);
+
+        return accounts.stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private AccountResponse toResponse(Account account) {
+        return new AccountResponse(
+                account.getId(),
+                account.getName(),
+                account.getType(),
+                account.getBalance()
+        );
     }
 
     /**

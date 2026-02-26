@@ -104,7 +104,7 @@ public class AuthService {
      * Здесь позже будет генерация JWT. Заменить на нормальный!!!
      */
     private AuthResponse buildAuthResponse(User user) {
-        // Пока просто возвращаем заглушку токена
+        // Пока возвращается заглушка
         String fakeToken = user.getId().toString();
 
         return new AuthResponse(fakeToken, "fake");

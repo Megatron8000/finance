@@ -51,10 +51,11 @@ public class SavingsService {
      * @param accountId идентификатор банковского счёта
      */
     @Transactional
-    public void capitalize(UUID accountId) {
+    public void capitalize(UUID accountId, UUID userId) {
 
         // Защита от передачи null — fail fast
         Objects.requireNonNull(accountId, "accountId must not be null");
+        Objects.requireNonNull(userId, "userId must not be null");
 
         // Загружаем данные накопительного счёта.
         // Если запись не найдена — это бизнес-ошибка, а не NullPointerException
@@ -65,6 +66,9 @@ public class SavingsService {
 
         // Основной счёт, к которому привязаны накопительные условия
         Account account = details.getAccount();
+        if (!Objects.equals(account.getUser().getId(), userId)) {
+            throw new IllegalArgumentException("Account does not belong to current user");
+        }
 
         // Дата последней капитализации процентов
         LocalDate lastDate = details.getLastCapitalizationDate();

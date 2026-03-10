@@ -6,6 +6,7 @@ import org.example.dto.auth.LoginRequest;
 import org.example.dto.auth.RegisterRequest;
 import org.example.entity.User;
 import org.example.repository.UserRepository;
+import org.example.security.JwtProvider;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +29,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final Clock clock;
+    private final JwtProvider jwtProvider;
 
     /**
      * Регистрация нового пользователя.
@@ -101,13 +103,10 @@ public class AuthService {
 
     /**
      * Формирование ответа авторизации.
-     * Здесь позже будет генерация JWT. Заменить на нормальный!!!
      */
     private AuthResponse buildAuthResponse(User user) {
-        // Пока возвращается заглушка
-        String fakeToken = user.getId().toString();
-
-        return new AuthResponse(fakeToken, "fake");
+    String accessToken = jwtProvider.generateToken(user);
+        return new AuthResponse(accessToken, "Bearer");
 
     }
 }

@@ -50,7 +50,7 @@ public class TransactionService {
 
         if (tx.getType() == TransactionType.EXPENSE) {
             if (account.getBalance().compareTo(tx.getAmount()) < 0) {
-                throw new ValidationException("Недостаточно средств");
+                throw new ValidationException("Insufficient funds");
             }
             account.setBalance(account.getBalance().subtract(tx.getAmount()));
         } else {
@@ -82,7 +82,7 @@ public class TransactionService {
             account.setBalance(account.getBalance().add(tx.getAmount()));
         } else {
             if (account.getBalance().compareTo(tx.getAmount()) < 0) {
-                throw new ValidationException("Удаление приведет к минусу");
+                throw new ValidationException("Deleting transaction would make balance negative");
             }
             account.setBalance(account.getBalance().subtract(tx.getAmount()));
         }

@@ -6,6 +6,7 @@ import org.example.dto.account.AccountCreateRequest;
 import org.example.dto.account.AccountResponse;
 import org.example.entity.Account;
 import org.example.entity.User;
+import org.example.exception.ValidationException;
 import org.example.services.AccountService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -65,7 +66,7 @@ public class AccountController {
      */
     private UUID extractUserId(User user) {
         if (user == null) {
-            throw new IllegalStateException("Authenticated user not found");
+            throw new ValidationException("Authenticated user not found");
         }
         return user.getId();
     }

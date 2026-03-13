@@ -1,6 +1,5 @@
 package org.example.services;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.transaction.TransactionCreateRequest;
 import org.example.entity.Account;
@@ -8,9 +7,12 @@ import org.example.entity.Category;
 import org.example.entity.Transaction;
 import org.example.entity.User;
 import org.example.enums.TransactionType;
+import org.example.exception.NotFoundException;
+import org.example.exception.ValidationException;
 import org.example.repository.AccountRepository;
 import org.example.repository.CategoryRepository;
 import org.example.repository.TransactionRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,26 +26,18 @@ public class TransactionService {
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
 
-    /**
-     * Создание новой транзакции с изменением баланса.
-     */
     @Transactional
     public UUID createTransaction(TransactionCreateRequest request, User user) {
-
-        // Загружаем счёт
         Account account = accountRepository.findById(request.getAccountId())
-                .orElseThrow(() -> new EntityNotFoundException("Account not found"));
+                .orElseThrow(() -> new NotFoundException("Account not found"));
 
-        // Проверка принадлежности счёта пользователю
         if (!account.getUser().getId().equals(user.getId())) {
-            throw new IllegalStateException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
-        // Загружаем категорию
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new EntityNotFoundException("Category not found"));
+                .orElseThrow(() -> new NotFoundException("Category not found"));
 
-        // Создаём транзакцию
         Transaction tx = new Transaction();
         tx.setId(UUID.randomUUID());
         tx.setUser(user);
@@ -54,15 +48,11 @@ public class TransactionService {
         tx.setTransactionDate(request.getTransactionDate());
         tx.setDeleted(false);
 
-        // Изменяем баланс
         if (tx.getType() == TransactionType.EXPENSE) {
-
             if (account.getBalance().compareTo(tx.getAmount()) < 0) {
-                throw new IllegalStateException("Недостаточно средств");
+                throw new ValidationException("Недостаточно средств");
             }
-
             account.setBalance(account.getBalance().subtract(tx.getAmount()));
-
         } else {
             account.setBalance(account.getBalance().add(tx.getAmount()));
         }
@@ -73,22 +63,17 @@ public class TransactionService {
         return tx.getId();
     }
 
-    /**
-     * Логическое удаление транзакции с откатом баланса.
-     */
     @Transactional
     public void deleteTransaction(UUID transactionId, User user) {
-
         Transaction tx = transactionRepository.findById(transactionId)
-                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
 
         if (tx.isDeleted()) {
             return;
         }
 
-        // Проверка владельца
         if (!tx.getUser().getId().equals(user.getId())) {
-            throw new IllegalStateException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         Account account = tx.getAccount();
@@ -96,11 +81,9 @@ public class TransactionService {
         if (tx.getType() == TransactionType.EXPENSE) {
             account.setBalance(account.getBalance().add(tx.getAmount()));
         } else {
-
             if (account.getBalance().compareTo(tx.getAmount()) < 0) {
-                throw new IllegalStateException("Удаление приведёт к минусу");
+                throw new ValidationException("Удаление приведет к минусу");
             }
-
             account.setBalance(account.getBalance().subtract(tx.getAmount()));
         }
 

@@ -5,6 +5,7 @@ import org.example.dto.analytics.BalanceResponse;
 import org.example.dto.analytics.DailyStats;
 import org.example.dto.analytics.PieChartItem;
 import org.example.enums.TransactionType;
+import org.example.exception.ValidationException;
 import org.example.services.AnalyticsService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,21 +25,13 @@ public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
-    /**
-     * Получение общего баланса пользователя
-     */
     @GetMapping("/balance")
-    public BalanceResponse getBalance(
-            @AuthenticationPrincipal(expression = "id") UUID userId
-    ) {
+    public BalanceResponse getBalance(@AuthenticationPrincipal(expression = "id") UUID userId) {
         return BalanceResponse.builder()
                 .totalBalance(analyticsService.getTotalBalance(userId))
                 .build();
     }
 
-    /**
-     * Получение ежедневной статистики за период
-     */
     @GetMapping("/daily")
     public List<DailyStats> getDailyStats(
             @AuthenticationPrincipal(expression = "id") UUID userId,
@@ -46,15 +39,12 @@ public class AnalyticsController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
         if (from.isAfter(to)) {
-            throw new IllegalArgumentException("From date must be before to date");
+            throw new ValidationException("From date must be before to date");
         }
 
         return analyticsService.getDailyStats(userId, from, to);
     }
 
-    /**
-     * Получение данных для pie chart по типу операций
-     */
     @GetMapping("/pie")
     public List<PieChartItem> getPieChart(
             @AuthenticationPrincipal(expression = "id") UUID userId,
@@ -63,7 +53,7 @@ public class AnalyticsController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
         if (from.isAfter(to)) {
-            throw new IllegalArgumentException("From date must be before to date");
+            throw new ValidationException("From date must be before to date");
         }
 
         return analyticsService.getPieChart(userId, type, from, to);

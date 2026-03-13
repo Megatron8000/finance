@@ -5,6 +5,7 @@ import org.example.dto.auth.AuthResponse;
 import org.example.dto.auth.LoginRequest;
 import org.example.dto.auth.RegisterRequest;
 import org.example.entity.User;
+import org.example.exception.ValidationException;
 import org.example.repository.UserRepository;
 import org.example.security.JwtProvider;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,10 +18,6 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Сервис аутентификации.
- * Содержит бизнес-логику регистрации и логина.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -31,11 +28,7 @@ public class AuthService {
     private final Clock clock;
     private final JwtProvider jwtProvider;
 
-    /**
-     * Регистрация нового пользователя.
-     */
     public AuthResponse register(RegisterRequest request) {
-
         validateRegisterRequest(request);
 
         String normalizedEmail = normalizeEmail(request.email());
@@ -49,25 +42,20 @@ public class AuthService {
         try {
             userRepository.save(user);
         } catch (DataIntegrityViolationException ex) {
-            throw new IllegalArgumentException("Пользователь с таким email уже существует");
+            throw new ValidationException("Пользователь с таким email уже существует");
         }
 
         return buildAuthResponse(user);
     }
 
-    /**
-     * Логин пользователя.
-     */
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
-
         validateLoginRequest(request);
 
         String normalizedEmail = normalizeEmail(request.email());
 
         User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() ->
-                        new BadCredentialsException("Неверный email или пароль"));
+                .orElseThrow(() -> new BadCredentialsException("Неверный email или пароль"));
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BadCredentialsException("Неверный email или пароль");
@@ -76,37 +64,24 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
-    /**
-     * Нормализация email.
-     */
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase();
     }
 
-    /**
-     * Валидация регистрации.
-     */
     private void validateRegisterRequest(RegisterRequest request) {
         if (request.email() == null || request.password() == null) {
-            throw new IllegalArgumentException("Email и пароль обязательны");
+            throw new ValidationException("Email и пароль обязательны");
         }
     }
 
-    /**
-     * Валидация логина.
-     */
     private void validateLoginRequest(LoginRequest request) {
         if (request.email() == null || request.password() == null) {
-            throw new IllegalArgumentException("Email и пароль обязательны");
+            throw new ValidationException("Email и пароль обязательны");
         }
     }
 
-    /**
-     * Формирование ответа авторизации.
-     */
     private AuthResponse buildAuthResponse(User user) {
-    String accessToken = jwtProvider.generateToken(user);
+        String accessToken = jwtProvider.generateToken(user);
         return new AuthResponse(accessToken, "Bearer");
-
     }
 }

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.dto.account.AccountCreateRequest;
 import org.example.dto.account.AccountResponse;
 import org.example.entity.Account;
+import org.example.mapper.AccountMapper;
 import org.example.entity.User;
 import org.example.exception.ValidationException;
 import org.example.services.AccountService;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class AccountController {
 
     private final AccountService accountService;
+    private final AccountMapper accountMapper;
 
     /**
      * Создание нового счета
@@ -44,7 +46,7 @@ public class AccountController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(toResponse(account));
+                .body(accountMapper.toResponse(account));
     }
 
     /**
@@ -69,14 +71,5 @@ public class AccountController {
             throw new ValidationException("Authenticated user not found");
         }
         return user.getId();
-    }
-
-    private AccountResponse toResponse(Account account) {
-        return new AccountResponse(
-                account.getId(),
-                account.getName(),
-                account.getType(),
-                account.getBalance()
-        );
     }
 }

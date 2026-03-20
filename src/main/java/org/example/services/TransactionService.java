@@ -7,6 +7,7 @@ import org.example.entity.Category;
 import org.example.entity.Transaction;
 import org.example.entity.User;
 import org.example.enums.TransactionType;
+import org.example.mapper.TransactionMapper;
 import org.example.exception.NotFoundException;
 import org.example.exception.ValidationException;
 import org.example.repository.AccountRepository;
@@ -25,6 +26,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
+    private final TransactionMapper transactionMapper;
 
     @Transactional
     public UUID createTransaction(TransactionCreateRequest request, User user) {
@@ -38,15 +40,7 @@ public class TransactionService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new NotFoundException("Category not found"));
 
-        Transaction tx = new Transaction();
-        tx.setId(UUID.randomUUID());
-        tx.setUser(user);
-        tx.setAccount(account);
-        tx.setCategory(category);
-        tx.setType(request.getType());
-        tx.setAmount(request.getAmount());
-        tx.setTransactionDate(request.getTransactionDate());
-        tx.setDeleted(false);
+        Transaction tx = transactionMapper.toEntity(request, user, account, category);
 
         if (tx.getType() == TransactionType.EXPENSE) {
             if (account.getBalance().compareTo(tx.getAmount()) < 0) {

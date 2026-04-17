@@ -20,14 +20,18 @@ const formatError = (error: unknown) =>
     error instanceof Error ? error.message : 'Ошибка загрузки счетов';
 
 export const useAccountStore = create<AccountState>((set) => ({
+    // Начальное состояние: список счетов пуст до первой загрузки.
     accounts: [],
+    // По умолчанию никакие асинхронные операции не выполняются.
     isLoading: false,
+    // До первого запроса ошибки отсутствуют.
     error: null,
     fetchAccounts: async () => {
         // Перед запросом сбрасываем ошибку и включаем состояние загрузки.
         set({ isLoading: true, error: null });
         try {
             const accounts = await accountApi.getAll();
+            // После успешной загрузки обновляем список и выключаем индикатор.
             set({ accounts, isLoading: false });
         } catch (error) {
             // Сохраняем текст ошибки и пробрасываем её выше для обработчиков.
@@ -43,6 +47,7 @@ export const useAccountStore = create<AccountState>((set) => ({
             // Добавляем новый счёт в конец локального списка.
             set((state) => ({ accounts: [...state.accounts, account], isLoading: false }));
         } catch (error) {
+            // В случае ошибки возвращаем стор в стабильное состояние.
             set({ error: formatError(error), isLoading: false });
             throw error;
         }

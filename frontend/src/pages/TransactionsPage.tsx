@@ -1,4 +1,4 @@
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+﻿import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { Alert, Card, CardContent, Chip, Grid, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { categoryApi } from '../api/categoryApi';
@@ -12,13 +12,17 @@ import { formatDate } from '../utils/date';
 import { formatMoney } from '../utils/money';
 
 export const TransactionsPage = () => {
+    // Данные счетов и операций из стора.
     const { accounts, fetchAccounts } = useAccountStore();
     const { transactions, addTransaction, removeTransaction, error } = useTransactionStore();
+    // Локальные категории и возможная ошибка их загрузки.
     const [categories, setCategories] = useState<Category[]>([]);
     const [categoriesError, setCategoriesError] = useState<string | null>(null);
+    // Состояние и API диалога подтверждения удаления.
     const { open, confirm, handleClose } = useConfirm();
 
     useEffect(() => {
+        // Загружаем счета и обе группы категорий при открытии страницы.
         void fetchAccounts();
         Promise.all([categoryApi.getByType('INCOME'), categoryApi.getByType('EXPENSE')])
             .then(([income, expense]) => setCategories([...income, ...expense]))
@@ -26,6 +30,7 @@ export const TransactionsPage = () => {
     }, [fetchAccounts]);
 
     const handleAddTransaction = async (payload: Parameters<typeof addTransaction>[0]) => {
+        // Подставляем человекочитаемые названия счета и категории для отображения в таблице.
         const account = accounts.find((item) => item.id === payload.accountId);
         const category = categories.find((item) => item.id === payload.categoryId);
 
@@ -36,16 +41,19 @@ export const TransactionsPage = () => {
     };
 
     const handleDelete = async (id: string) => {
+        // Удаляем запись только после подтверждения пользователя.
         const accepted = await confirm();
         if (accepted) {
             await removeTransaction(id);
         }
     };
 
+    // Форму можно показать только когда есть и счета, и категории.
     const canCreate = useMemo(() => accounts.length > 0 && categories.length > 0, [accounts.length, categories.length]);
 
     return (
         <Stack spacing={3}>
+            {/* Ошибки из операций/категорий показываем отдельными уведомлениями. */}
             {error ? <Alert severity="error">{error}</Alert> : null}
             {categoriesError ? <Alert severity="warning">{categoriesError}</Alert> : null}
 
@@ -63,6 +71,7 @@ export const TransactionsPage = () => {
                     </Card>
                 </Grid>
                 <Grid size={{ xs: 12, lg: 8 }}>
+                    {/* Таблица локального списка транзакций. */}
                     <Card>
                         <CardContent>
                             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -98,6 +107,7 @@ export const TransactionsPage = () => {
                                     {transactions.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={6}>
+                                                {/* Подсказка, пока список операций пуст. */}
                                                 <Typography color="text.secondary">Добавленные через форму транзакции будут отображаться здесь.</Typography>
                                             </TableCell>
                                         </TableRow>
@@ -109,6 +119,7 @@ export const TransactionsPage = () => {
                 </Grid>
             </Grid>
 
+            {/* Подтверждение удаления транзакции. */}
             <ConfirmDialog
                 open={open}
                 title="Удалить транзакцию?"

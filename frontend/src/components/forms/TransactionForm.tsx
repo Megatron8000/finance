@@ -14,6 +14,7 @@ interface TransactionFormProps {
 const transactionTypes: TransactionType[] = ['INCOME', 'EXPENSE'];
 
 export const TransactionForm = ({ accounts, categories, onSubmit }: TransactionFormProps) => {
+    // Инициализация формы транзакции с дефолтными значениями.
     const { control, watch, handleSubmit, reset, formState: { isSubmitting } } = useForm<TransactionCreatePayload>({
         defaultValues: {
             accountId: '',
@@ -24,10 +25,12 @@ export const TransactionForm = ({ accounts, categories, onSubmit }: TransactionF
         }
     });
 
+    // Выбранный тип операции влияет на набор доступных категорий.
     const type = watch('type');
     const filteredCategories = categories.filter((category) => category.type === type);
 
     return (
+        // Перед отправкой приводим сумму к числу и сбрасываем форму после успеха.
         <Stack component="form" spacing={2} onSubmit={handleSubmit(async (values) => {
             await onSubmit({ ...values, amount: Number(values.amount) });
             reset({ accountId: '', categoryId: '', type, amount: 0, transactionDate: today() });

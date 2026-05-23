@@ -50,7 +50,7 @@ public class AccountService {
 
     @Transactional(readOnly = true)
     public List<AccountResponse> getAccounts(UUID userId) {
-        List<Account> accounts = accountRepository.findByUserId(userId);
+        List<Account> accounts = accountRepository.findByUser_Id(userId);
         return accounts.stream().map(accountMapper::toResponse).toList();
     }
 

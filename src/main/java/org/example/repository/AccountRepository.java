@@ -12,5 +12,5 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     /**
      * Возвращает все счета пользователя по его идентификатору
      */
-    List<Account> findByUserId(UUID userId);
+    List<Account> findByUser_Id(UUID userId);
 }

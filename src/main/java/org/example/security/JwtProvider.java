@@ -94,7 +94,7 @@ public class JwtProvider {
         try {
             // если секрет хранится в Base64
             keyBytes = Decoders.BASE64.decode(secret);
-        } catch (IllegalArgumentException ex) {
+        } catch (RuntimeException ex) {
             // если это обычная строка
             keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         }

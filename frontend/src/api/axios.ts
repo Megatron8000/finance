@@ -18,7 +18,7 @@ export const setStoredToken = (token: string | null) => {
 
 // Базовый HTTP-клиент для запросов к backend API.
 export const api = Axios.create({
-    baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
+    baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8081/api'
 });
 
 // Перед каждым запросом подставляет Bearer-токен, если он есть.

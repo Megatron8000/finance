@@ -1,14 +1,14 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 spring:
   application:
     name: finance-app
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/finance_db
-    username: finance_user
-    password: finance_password
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/finance_db}
+    username: ${DB_USERNAME:finance_user}
+    password: ${DB_PASSWORD:finance_password}
 
   jpa:
     hibernate:
@@ -33,7 +33,7 @@ spring:
 # JWT CONFIG
 # =====================
 jwt:
-  secret: "CHANGE_ME_TO_32+_CHARS_SECRET_KEY_FOR_HS256"
+  secret: ${JWT_SECRET:CHANGE_ME_TO_32+_CHARS_SECRET_KEY_FOR_HS256}
   validity-ms: 86400000 # 24 часа
 
 # =====================

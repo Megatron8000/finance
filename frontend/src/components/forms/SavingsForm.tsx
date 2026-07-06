@@ -23,9 +23,9 @@ export const SavingsForm = ({ accounts, onSubmit }: SavingsFormProps) => {
             <Controller
                 name="accountId"
                 control={control}
-                rules={{ required: 'Р’С‹Р±РµСЂРёС‚Рµ РЅР°РєРѕРїРёС‚РµР»СЊРЅС‹Р№ СЃС‡С‘С‚' }}
+                rules={{ required: 'Выберите накопительный счёт' }}
                 render={({ field, fieldState }) => (
-                    <TextField {...field} select label="РќР°РєРѕРїРёС‚РµР»СЊРЅС‹Р№ СЃС‡С‘С‚" error={!!fieldState.error} helperText={fieldState.error?.message}>
+                    <TextField {...field} select label="Накопительный счёт" error={!!fieldState.error} helperText={fieldState.error?.message}>
                         {/* Список доступных накопительных счетов. */}
                         {accounts.map((account) => (
                             <MenuItem key={account.id} value={account.id}>{account.name}</MenuItem>
@@ -33,7 +33,7 @@ export const SavingsForm = ({ accounts, onSubmit }: SavingsFormProps) => {
                     </TextField>
                 )}
             />
-            <Button type="submit" variant="contained" disabled={isSubmitting}>РљР°РїРёС‚Р°Р»РёР·РёСЂРѕРІР°С‚СЊ</Button>
+            <Button type="submit" variant="contained" disabled={isSubmitting}>Капитализировать</Button>
         </Stack>
     );
 };

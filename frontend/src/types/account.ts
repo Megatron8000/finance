@@ -18,3 +18,5 @@ export interface AccountCreatePayload {
     // Тип создаваемого счета.
     type: AccountType;
 }
+
+export type AccountUpdatePayload = AccountCreatePayload;

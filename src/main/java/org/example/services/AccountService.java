@@ -6,9 +6,11 @@ import org.example.entity.Account;
 import org.example.mapper.AccountMapper;
 import org.example.entity.SavingsAccountDetails;
 import org.example.enums.AccountType;
+import org.example.exception.NotFoundException;
 import org.example.exception.ValidationException;
 import org.example.repository.AccountRepository;
 import org.example.repository.SavingsAccountDetailsRepository;
+import org.example.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final SavingsAccountDetailsRepository savingsRepository;
+    private final TransactionRepository transactionRepository;
     private final Clock clock;
     private final AccountMapper accountMapper;
 
@@ -53,14 +56,65 @@ public class AccountService {
         return accounts.stream().map(accountMapper::toResponse).toList();
     }
 
+    @Transactional
+    public Account updateAccount(UUID userId, UUID accountId, String name, AccountType type) {
+        validateAccountData(name, type);
+
+        Account account = accountRepository.findOwnedById(accountId, userId)
+                .orElseThrow(() -> new NotFoundException("Account not found"));
+
+        AccountType previousType = account.getType();
+        account.setName(name.trim());
+        account.setType(type);
+
+        syncSavingsDetails(account, previousType, type);
+
+        return accountRepository.save(account);
+    }
+
+    @Transactional
+    public void deleteAccount(UUID userId, UUID accountId) {
+        Account account = accountRepository.findOwnedById(accountId, userId)
+                .orElseThrow(() -> new NotFoundException("Account not found"));
+
+        savingsRepository.deleteForAccount(account.getId());
+        transactionRepository.deleteByAccountIdAndUserId(account.getId(), userId);
+        accountRepository.delete(account);
+    }
+
     private Account buildAccount(UUID userId, String name, AccountType type) {
         Account account = new Account();
         account.setId(UUID.randomUUID());
         account.setUserId(userId);
-        account.setName(name);
+        account.setName(name.trim());
         account.setType(type);
         account.setBalance(BigDecimal.ZERO);
         return account;
+    }
+
+    private void validateAccountData(String name, AccountType type) {
+        if (name == null || name.isBlank()) {
+            throw new ValidationException("account name must not be empty");
+        }
+
+        if (type == null) {
+            throw new ValidationException("account type must not be null");
+        }
+    }
+
+    private void syncSavingsDetails(Account account, AccountType previousType, AccountType newType) {
+        if (previousType == newType) {
+            return;
+        }
+
+        if (newType == AccountType.SAVINGS) {
+            savingsRepository.save(buildSavingsDetails(account));
+            return;
+        }
+
+        if (previousType == AccountType.SAVINGS) {
+            savingsRepository.deleteForAccount(account.getId());
+        }
     }
 
     private SavingsAccountDetails buildSavingsDetails(Account account) {

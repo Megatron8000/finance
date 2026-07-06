@@ -1,31 +1,79 @@
 import AddCardOutlinedIcon from '@mui/icons-material/AddCardOutlined';
-import { Alert, Card, CardContent, Chip, Grid, Stack, Typography } from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import {
+    Alert,
+    Box,
+    Card,
+    CardContent,
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    Grid,
+    IconButton,
+    Stack,
+    Tooltip,
+    Typography
+} from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { analyticsApi } from '../api/analyticsApi';
 import { BalanceChart } from '../components/charts/BalanceChart';
-import { AccountForm } from '../components/forms/AccountForm';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { Loader } from '../components/common/Loader';
+import { AccountForm } from '../components/forms/AccountForm';
+import { useConfirm } from '../hooks/useConfirm';
 import { useAccountStore } from '../store/accountStore';
+import type { Account, AccountCreatePayload } from '../types/account';
 import { formatMoney, toNumber } from '../utils/money';
 
+const calculateTotalBalance = (accounts: Account[]) =>
+    accounts.reduce((sum, account) => sum + toNumber(account.balance), 0).toString();
+
 export const DashboardPage = () => {
-    const { accounts, fetchAccounts, createAccount, isLoading, error } = useAccountStore();
+    const { accounts, fetchAccounts, createAccount, updateAccount, deleteAccount, isLoading, error } = useAccountStore();
     const [totalBalance, setTotalBalance] = useState('0');
     const [balanceError, setBalanceError] = useState<string | null>(null);
+    const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+    const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
+    const confirmDelete = useConfirm();
 
     useEffect(() => {
-        // При открытии страницы загружаем счета и агрегированный общий баланс.
         void fetchAccounts();
         void analyticsApi.getBalance().then((data) => setTotalBalance(data.totalBalance)).catch((err: Error) => setBalanceError(err.message));
     }, [fetchAccounts]);
 
-    // Пересчитываем количество накопительных счетов только при изменении списка счетов.
     const savingsCount = useMemo(
         () => accounts.filter((account) => account.type === 'SAVINGS').length,
         [accounts]
     );
 
-    // Для первого рендера показываем лоадер, пока данные еще не пришли.
+    const handleCreateAccount = async (payload: AccountCreatePayload) => {
+        await createAccount(payload);
+    };
+
+    const handleUpdateAccount = async (payload: AccountCreatePayload) => {
+        if (!editingAccount) {
+            return;
+        }
+
+        await updateAccount(editingAccount.id, payload);
+        setEditingAccount(null);
+    };
+
+    const handleDeleteAccount = async (account: Account) => {
+        setDeletingAccount(account);
+        const accepted = await confirmDelete.confirm();
+
+        if (!accepted) {
+            setDeletingAccount(null);
+            return;
+        }
+
+        await deleteAccount(account.id);
+        setTotalBalance(calculateTotalBalance(accounts.filter((item) => item.id !== account.id)));
+        setDeletingAccount(null);
+    };
+
     if (isLoading && accounts.length === 0) {
         return <Loader />;
     }
@@ -74,7 +122,7 @@ export const DashboardPage = () => {
                                     <AddCardOutlinedIcon color="primary" />
                                     <Typography variant="h6">Добавить счёт</Typography>
                                 </Stack>
-                                <AccountForm onSubmit={createAccount} />
+                                <AccountForm onSubmit={handleCreateAccount} />
                             </Stack>
                         </CardContent>
                     </Card>
@@ -85,15 +133,68 @@ export const DashboardPage = () => {
                 <CardContent>
                     <Stack spacing={2}>
                         <Typography variant="h6">Список счетов</Typography>
-                        <Stack direction="row" flexWrap="wrap" gap={1}>
-                            {/* Каждый счет отображаем отдельным чипом с названием и балансом. */}
+                        <Stack spacing={1.5}>
                             {accounts.map((account) => (
-                                <Chip key={account.id} label={`${account.name} · ${formatMoney(toNumber(account.balance))}`} color="primary" variant="outlined" />
+                                <Box
+                                    key={account.id}
+                                    sx={{
+                                        display: 'grid',
+                                        gridTemplateColumns: { xs: '1fr auto', sm: '1fr auto auto' },
+                                        gap: 1,
+                                        alignItems: 'center',
+                                        border: 1,
+                                        borderColor: 'divider',
+                                        borderRadius: 1,
+                                        px: 2,
+                                        py: 1.25
+                                    }}
+                                >
+                                    <Box sx={{ minWidth: 0 }}>
+                                        <Typography fontWeight={600} noWrap>{account.name}</Typography>
+                                        <Typography variant="body2" color="text.secondary">{account.type}</Typography>
+                                    </Box>
+                                    <Typography fontWeight={700} sx={{ whiteSpace: 'nowrap' }}>
+                                        {formatMoney(toNumber(account.balance))}
+                                    </Typography>
+                                    <Stack direction="row" spacing={0.5} sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' }, justifySelf: { xs: 'end', sm: 'auto' } }}>
+                                        <Tooltip title="Редактировать">
+                                            <IconButton aria-label="Редактировать счёт" onClick={() => setEditingAccount(account)}>
+                                                <EditOutlinedIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Удалить">
+                                            <IconButton aria-label="Удалить счёт" color="error" onClick={() => void handleDeleteAccount(account)}>
+                                                <DeleteOutlineIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Stack>
+                                </Box>
                             ))}
                         </Stack>
                     </Stack>
                 </CardContent>
             </Card>
+
+            <Dialog open={!!editingAccount} onClose={() => setEditingAccount(null)} fullWidth maxWidth="sm">
+                <DialogTitle>Редактировать счёт</DialogTitle>
+                <DialogContent>
+                    {editingAccount ? (
+                        <AccountForm
+                            initialValues={{ name: editingAccount.name, type: editingAccount.type }}
+                            submitLabel="Сохранить"
+                            onSubmit={handleUpdateAccount}
+                        />
+                    ) : null}
+                </DialogContent>
+            </Dialog>
+
+            <ConfirmDialog
+                open={confirmDelete.open}
+                title="Удалить счёт?"
+                description={`Счёт "${deletingAccount?.name ?? ''}" и связанные с ним транзакции будут удалены.`}
+                onCancel={() => confirmDelete.handleClose(false)}
+                onConfirm={() => confirmDelete.handleClose(true)}
+            />
         </Stack>
     );
 };

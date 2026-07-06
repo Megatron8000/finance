@@ -1,25 +1,30 @@
 import { Button, MenuItem, Stack, TextField } from '@mui/material';
+import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import type { AccountCreatePayload, AccountType } from '../../types/account';
 
 interface AccountFormProps {
+    initialValues?: AccountCreatePayload;
+    submitLabel?: string;
     onSubmit: (values: AccountCreatePayload) => Promise<void>;
 }
 
-// Доступные типы счёта для выбора в форме.
 const accountTypes: AccountType[] = ['CASH', 'NON_CASH', 'SAVINGS'];
+const defaultValues: AccountCreatePayload = { name: '', type: 'NON_CASH' };
 
-export const AccountForm = ({ onSubmit }: AccountFormProps) => {
-    // Инициализация формы и значений по умолчанию.
+export const AccountForm = ({ initialValues = defaultValues, submitLabel = 'Добавить счёт', onSubmit }: AccountFormProps) => {
     const { control, handleSubmit, reset, formState: { isSubmitting } } = useForm<AccountCreatePayload>({
-        defaultValues: { name: '', type: 'NON_CASH' }
+        defaultValues: initialValues
     });
 
+    useEffect(() => {
+        reset(initialValues);
+    }, [initialValues, reset]);
+
     return (
-        // После успешной отправки очищаем форму.
         <Stack component="form" spacing={2} onSubmit={handleSubmit(async (values) => {
             await onSubmit(values);
-            reset();
+            reset(initialValues === defaultValues ? defaultValues : values);
         })}>
             <Controller
                 name="name"
@@ -40,7 +45,7 @@ export const AccountForm = ({ onSubmit }: AccountFormProps) => {
                     </TextField>
                 )}
             />
-            <Button type="submit" variant="contained" disabled={isSubmitting}>Добавить счёт</Button>
+            <Button type="submit" variant="contained" disabled={isSubmitting}>{submitLabel}</Button>
         </Stack>
     );
 };

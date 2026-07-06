@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.account.AccountCreateRequest;
 import org.example.dto.account.AccountResponse;
+import org.example.dto.account.AccountUpdateRequest;
 import org.example.entity.Account;
 import org.example.mapper.AccountMapper;
 import org.example.entity.User;
@@ -61,6 +62,36 @@ public class AccountController {
         List<AccountResponse> response = accountService.getAccounts(userId);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{accountId}")
+    public ResponseEntity<AccountResponse> update(
+            @PathVariable UUID accountId,
+            @Valid @RequestBody AccountUpdateRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        UUID userId = extractUserId(user);
+
+        Account account = accountService.updateAccount(
+                userId,
+                accountId,
+                request.name(),
+                request.type()
+        );
+
+        return ResponseEntity.ok(accountMapper.toResponse(account));
+    }
+
+    @DeleteMapping("/{accountId}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID accountId,
+            @AuthenticationPrincipal User user
+    ) {
+        UUID userId = extractUserId(user);
+
+        accountService.deleteAccount(userId, accountId);
+
+        return ResponseEntity.noContent().build();
     }
 
     /**

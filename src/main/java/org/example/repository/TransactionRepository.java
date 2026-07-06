@@ -5,6 +5,7 @@ import org.example.dto.analytics.PieChartItem;
 import org.example.entity.Transaction;
 import org.example.enums.TransactionType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -20,7 +21,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
     @Query("""
         select coalesce(
             sum(
-                case 
+                case
                     when t.type = 'INCOME' then t.amount
                     else -t.amount
                 end
@@ -74,5 +75,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             TransactionType type,
             LocalDate from,
             LocalDate to
+    );
+
+    @Modifying
+    @Query("""
+        delete from Transaction t
+        where t.account.id = :accountId
+          and t.user.id = :userId
+    """)
+    void deleteByAccountIdAndUserId(
+            @Param("accountId") UUID accountId,
+            @Param("userId") UUID userId
     );
 }

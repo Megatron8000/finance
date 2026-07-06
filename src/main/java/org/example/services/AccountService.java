@@ -37,8 +37,7 @@ public class AccountService {
             throw new ValidationException("account type must not be null");
         }
 
-        Account account = buildAccount(userId, name, type);
-        accountRepository.save(account);
+        Account account = accountRepository.save(buildAccount(userId, name, type));
 
         if (type == AccountType.SAVINGS) {
             SavingsAccountDetails details = buildSavingsDetails(account);

@@ -19,6 +19,7 @@ public class SavingsAccountDetails {
 
     @OneToOne
     @MapsId
+    @JoinColumn(name = "account_id")
     private Account account;
 
     private BigDecimal interestRate;

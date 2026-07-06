@@ -56,6 +56,7 @@ public class AccountService {
 
     private Account buildAccount(UUID userId, String name, AccountType type) {
         Account account = new Account();
+        account.setId(UUID.randomUUID());
         account.setUserId(userId);
         account.setName(name);
         account.setType(type);

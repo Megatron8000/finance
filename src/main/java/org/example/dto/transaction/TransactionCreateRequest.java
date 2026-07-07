@@ -2,6 +2,7 @@ package org.example.dto.transaction;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.example.enums.TransactionType;
@@ -47,4 +48,7 @@ public class TransactionCreateRequest {
      */
     @NotNull
     private LocalDate transactionDate;
+
+    @Size(max = 500)
+    private String comment;
 }

@@ -24,6 +24,7 @@ import { AccountForm } from '../components/forms/AccountForm';
 import { useConfirm } from '../hooks/useConfirm';
 import { useAccountStore } from '../store/accountStore';
 import type { Account, AccountCreatePayload } from '../types/account';
+import { ACCOUNT_TYPE_LABELS } from '../types/account';
 import { formatMoney, toNumber } from '../utils/money';
 
 const calculateTotalBalance = (accounts: Account[]) =>
@@ -151,7 +152,7 @@ export const DashboardPage = () => {
                                 >
                                     <Box sx={{ minWidth: 0 }}>
                                         <Typography fontWeight={600} noWrap>{account.name}</Typography>
-                                        <Typography variant="body2" color="text.secondary">{account.type}</Typography>
+                                        <Typography variant="body2" color="text.secondary">{ACCOUNT_TYPE_LABELS[account.type]}</Typography>
                                     </Box>
                                     <Typography fontWeight={700} sx={{ whiteSpace: 'nowrap' }}>
                                         {formatMoney(toNumber(account.balance))}

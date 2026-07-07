@@ -44,7 +44,7 @@ export const SavingsPage = () => {
                         {savingsAccounts.length > 0 ? (
                             <SavingsForm accounts={savingsAccounts} onSubmit={handleCapitalize} />
                         ) : (
-                            <Alert severity="info">Добавьте счёт типа SAVINGS на дашборде, чтобы использовать этот раздел.</Alert>
+                            <Alert severity="info">Добавьте счёт типа «Сбережения» на дашборде, чтобы использовать этот раздел.</Alert>
                         )}
                     </Stack>
                 </CardContent>

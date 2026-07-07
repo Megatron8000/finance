@@ -21,6 +21,7 @@ export interface Transaction {
     amount: string;
     // Дата транзакции (обычно в ISO-формате).
     transactionDate: string;
+    comment?: string | null;
 }
 
 // Данные для создания новой транзакции.
@@ -35,4 +36,5 @@ export interface TransactionCreatePayload {
     amount: number;
     // Дата транзакции.
     transactionDate: string;
+    comment?: string | null;
 }

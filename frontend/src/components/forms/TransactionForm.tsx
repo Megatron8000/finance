@@ -21,7 +21,8 @@ export const TransactionForm = ({ accounts, categories, onSubmit }: TransactionF
             categoryId: '',
             type: 'EXPENSE',
             amount: 0,
-            transactionDate: today()
+            transactionDate: today(),
+            comment: ''
         }
     });
 
@@ -32,8 +33,9 @@ export const TransactionForm = ({ accounts, categories, onSubmit }: TransactionF
     return (
         // Перед отправкой приводим сумму к числу и сбрасываем форму после успеха.
         <Stack component="form" spacing={2} onSubmit={handleSubmit(async (values) => {
-            await onSubmit({ ...values, amount: Number(values.amount) });
-            reset({ accountId: '', categoryId: '', type, amount: 0, transactionDate: today() });
+            const comment = values.comment?.trim() || null;
+            await onSubmit({ ...values, amount: Number(values.amount), comment });
+            reset({ accountId: '', categoryId: '', type, amount: 0, transactionDate: today(), comment: '' });
         })}>
             <Controller
                 name="type"
@@ -82,6 +84,22 @@ export const TransactionForm = ({ accounts, categories, onSubmit }: TransactionF
                 name="transactionDate"
                 control={control}
                 render={({ field }) => <TextField {...field} type="date" label="Дата" InputLabelProps={{ shrink: true }} />}
+            />
+            <Controller
+                name="comment"
+                control={control}
+                rules={{ maxLength: { value: 500, message: 'Комментарий не должен превышать 500 символов' } }}
+                render={({ field, fieldState }) => (
+                    <TextField
+                        {...field}
+                        value={field.value ?? ''}
+                        label="Комментарий"
+                        multiline
+                        minRows={2}
+                        error={!!fieldState.error}
+                        helperText={fieldState.error?.message}
+                    />
+                )}
             />
             <Button type="submit" variant="contained" disabled={isSubmitting}>Сохранить транзакцию</Button>
         </Stack>

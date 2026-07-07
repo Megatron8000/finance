@@ -1,6 +1,12 @@
 // Тип счета: наличный, безналичный или накопительный.
 export type AccountType = 'CASH' | 'NON_CASH' | 'SAVINGS';
 
+export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
+    CASH: 'Наличные',
+    NON_CASH: 'Безнал',
+    SAVINGS: 'Сбережения',
+};
+
 export interface Account {
     // Уникальный идентификатор счета.
     id: string;

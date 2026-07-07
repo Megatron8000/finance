@@ -60,4 +60,6 @@ public class TransactionResponse {
      */
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate transactionDate;
+
+    private String comment;
 }

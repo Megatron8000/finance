@@ -34,6 +34,7 @@ public class TransactionMapper {
         tx.setType(request.getType());
         tx.setAmount(request.getAmount());
         tx.setTransactionDate(request.getTransactionDate());
+        tx.setComment(normalizeComment(request.getComment()));
         tx.setDeleted(false);
         return tx;
     }
@@ -58,6 +59,15 @@ public class TransactionMapper {
                 .type(tx.getType())
                 .amount(tx.getAmount())
                 .transactionDate(tx.getTransactionDate())
+                .comment(tx.getComment())
                 .build();
+    }
+
+    private String normalizeComment(String comment) {
+        if (comment == null || comment.isBlank()) {
+            return null;
+        }
+
+        return comment.trim();
     }
 }

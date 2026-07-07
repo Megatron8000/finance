@@ -2,6 +2,7 @@ import { Button, MenuItem, Stack, TextField } from '@mui/material';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import type { AccountCreatePayload, AccountType } from '../../types/account';
+import { ACCOUNT_TYPE_LABELS } from '../../types/account';
 
 interface AccountFormProps {
     initialValues?: AccountCreatePayload;
@@ -40,7 +41,7 @@ export const AccountForm = ({ initialValues = defaultValues, submitLabel = 'До
                 render={({ field }) => (
                     <TextField {...field} select label="Тип счёта">
                         {accountTypes.map((type) => (
-                            <MenuItem key={type} value={type}>{type}</MenuItem>
+                            <MenuItem key={type} value={type}>{ACCOUNT_TYPE_LABELS[type]}</MenuItem>
                         ))}
                     </TextField>
                 )}

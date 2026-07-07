@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/changelog/005-create-savings-account-details.yaml
   - include:
       file: db/changelog/006-seed-categories.yaml
+  - include:
+      file: db/changelog/007-add-transaction-comment.yaml

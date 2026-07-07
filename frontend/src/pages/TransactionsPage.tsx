@@ -85,6 +85,7 @@ export const TransactionsPage = () => {
                                         <TableCell>Счёт</TableCell>
                                         <TableCell>Категория</TableCell>
                                         <TableCell>Тип</TableCell>
+                                        <TableCell>Комментарий</TableCell>
                                         <TableCell align="right">Сумма</TableCell>
                                         <TableCell align="right">Действия</TableCell>
                                     </TableRow>
@@ -96,6 +97,11 @@ export const TransactionsPage = () => {
                                             <TableCell>{transaction.accountName ?? transaction.accountId}</TableCell>
                                             <TableCell>{transaction.categoryName ?? transaction.categoryId}</TableCell>
                                             <TableCell>{transaction.type}</TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" color={transaction.comment ? 'text.primary' : 'text.secondary'}>
+                                                    {transaction.comment || '-'}
+                                                </Typography>
+                                            </TableCell>
                                             <TableCell align="right">{formatMoney(transaction.amount)}</TableCell>
                                             <TableCell align="right">
                                                 <IconButton color="error" onClick={() => void handleDelete(transaction.id)}>
@@ -106,7 +112,7 @@ export const TransactionsPage = () => {
                                     ))}
                                     {transactions.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={6}>
+                                            <TableCell colSpan={7}>
                                                 {/* Подсказка, пока список операций пуст. */}
                                                 <Typography color="text.secondary">Добавленные через форму транзакции будут отображаться здесь.</Typography>
                                             </TableCell>

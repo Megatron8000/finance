@@ -34,6 +34,9 @@ public class Transaction {
 
     private LocalDate transactionDate;
 
+    @Column(name = "comment_text", length = 500)
+    private String comment;
+
     private boolean deleted;
 }
 

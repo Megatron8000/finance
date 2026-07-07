@@ -20,7 +20,7 @@ public record AccountCreateRequest(
 
         /**
          * Тип счёта:
-         * CASH / NON_CASH / SAVINGS
+         * CASH / NON_CASH / SAVINGS (Наличные / Безнал / Сбережения)
          */
         @NotNull(message = "Тип счёта обязателен")
         AccountType type

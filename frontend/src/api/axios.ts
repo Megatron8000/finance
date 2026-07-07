@@ -32,12 +32,13 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// При 401 очищает токен, чтобы пользователь прошёл повторную авторизацию.
+// При 401/403 очищает токен, чтобы пользователь прошёл повторную авторизацию.
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 || error.response?.status === 403) {
             setStoredToken(null);
+            window.location.href = '/login';
         }
 
         return Promise.reject(error);

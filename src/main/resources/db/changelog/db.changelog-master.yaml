@@ -15,3 +15,7 @@ databaseChangeLog:
       file: db/changelog/006-seed-categories.yaml
   - include:
       file: db/changelog/007-add-transaction-comment.yaml
+  - include:
+      file: db/changelog/008-add-account-currency.yaml
+  - include:
+      file: db/changelog/009-add-transaction-currency-fields.yaml

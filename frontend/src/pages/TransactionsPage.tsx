@@ -1,6 +1,6 @@
 ﻿import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { Alert, Card, CardContent, Chip, Grid, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { categoryApi } from '../api/categoryApi';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { TransactionForm } from '../components/forms/TransactionForm';
@@ -8,21 +8,18 @@ import { useConfirm } from '../hooks/useConfirm';
 import { useAccountStore } from '../store/accountStore';
 import { useTransactionStore } from '../store/transactionStore';
 import type { Category } from '../types/category';
+import { CurrencyFlag } from '../components/common/CurrencyFlag';
 import { formatDate } from '../utils/date';
 import { formatMoney } from '../utils/money';
 
 export const TransactionsPage = () => {
-    // Данные счетов и операций из стора.
     const { accounts, fetchAccounts } = useAccountStore();
     const { transactions, addTransaction, removeTransaction, error } = useTransactionStore();
-    // Локальные категории и возможная ошибка их загрузки.
     const [categories, setCategories] = useState<Category[]>([]);
     const [categoriesError, setCategoriesError] = useState<string | null>(null);
-    // Состояние и API диалога подтверждения удаления.
     const { open, confirm, handleClose } = useConfirm();
 
     useEffect(() => {
-        // Загружаем счета и обе группы категорий при открытии страницы.
         void fetchAccounts();
         Promise.all([categoryApi.getByType('INCOME'), categoryApi.getByType('EXPENSE')])
             .then(([income, expense]) => setCategories([...income, ...expense]))
@@ -30,7 +27,6 @@ export const TransactionsPage = () => {
     }, [fetchAccounts]);
 
     const handleAddTransaction = async (payload: Parameters<typeof addTransaction>[0]) => {
-        // Подставляем человекочитаемые названия счета и категории для отображения в таблице.
         const account = accounts.find((item) => item.id === payload.accountId);
         const category = categories.find((item) => item.id === payload.categoryId);
 
@@ -41,19 +37,20 @@ export const TransactionsPage = () => {
     };
 
     const handleDelete = async (id: string) => {
-        // Удаляем запись только после подтверждения пользователя.
         const accepted = await confirm();
         if (accepted) {
             await removeTransaction(id);
         }
     };
 
-    // Форму можно показать только когда есть и счета, и категории.
-    const canCreate = useMemo(() => accounts.length > 0 && categories.length > 0, [accounts.length, categories.length]);
+    const handleCategoryCreated = (category: Category) => {
+        setCategories((prev) => [...prev, category]);
+    };
+
+    const canCreate = accounts.length > 0;
 
     return (
         <Stack spacing={3}>
-            {/* Ошибки из операций/категорий показываем отдельными уведомлениями. */}
             {error ? <Alert severity="error">{error}</Alert> : null}
             {categoriesError ? <Alert severity="warning">{categoriesError}</Alert> : null}
 
@@ -63,19 +60,18 @@ export const TransactionsPage = () => {
                         <CardContent>
                             <Typography variant="h6" gutterBottom>Новая транзакция</Typography>
                             {canCreate ? (
-                                <TransactionForm accounts={accounts} categories={categories} onSubmit={handleAddTransaction} />
+                                <TransactionForm accounts={accounts} categories={categories} onCategoryCreated={handleCategoryCreated} onSubmit={handleAddTransaction} />
                             ) : (
-                                <Alert severity="info">Сначала создайте счёт и убедитесь, что backend возвращает категории.</Alert>
+                                <Alert severity="info">Сначала создайте счёт на дашборде.</Alert>
                             )}
                         </CardContent>
                     </Card>
                 </Grid>
                 <Grid size={{ xs: 12, lg: 8 }}>
-                    {/* Таблица локального списка транзакций. */}
                     <Card>
                         <CardContent>
                             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                                <Typography variant="h6">Локальный журнал транзакций</Typography>
+                                <Typography variant="h6">Журнал транзакций</Typography>
                                 <Chip label={`${transactions.length} записей`} color="primary" variant="outlined" />
                             </Stack>
                             <Table size="small">
@@ -91,29 +87,38 @@ export const TransactionsPage = () => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {transactions.map((transaction) => (
-                                        <TableRow key={transaction.id} hover>
-                                            <TableCell>{formatDate(transaction.transactionDate)}</TableCell>
-                                            <TableCell>{transaction.accountName ?? transaction.accountId}</TableCell>
-                                            <TableCell>{transaction.categoryName ?? transaction.categoryId}</TableCell>
-                                            <TableCell>{transaction.type}</TableCell>
-                                            <TableCell>
-                                                <Typography variant="body2" color={transaction.comment ? 'text.primary' : 'text.secondary'}>
-                                                    {transaction.comment || '-'}
-                                                </Typography>
-                                            </TableCell>
-                                            <TableCell align="right">{formatMoney(transaction.amount)}</TableCell>
-                                            <TableCell align="right">
-                                                <IconButton color="error" onClick={() => void handleDelete(transaction.id)}>
-                                                    <DeleteOutlineIcon />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {transactions.map((transaction) => {
+                                        const cur = transaction.accountCurrency;
+                                        return (
+                                            <TableRow key={transaction.id} hover>
+                                                <TableCell>{formatDate(transaction.transactionDate)}</TableCell>
+                                                <TableCell>
+                                                    <Stack direction="row" spacing={0.5} alignItems="center">
+                                                        {cur && <CurrencyFlag currency={cur} size={16} />}
+                                                        <span>{transaction.accountName ?? transaction.accountId}</span>
+                                                    </Stack>
+                                                </TableCell>
+                                                <TableCell>{transaction.categoryName ?? transaction.categoryId}</TableCell>
+                                                <TableCell>{transaction.type === 'INCOME' ? 'Пополнение' : 'Расход'}</TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2" color={transaction.comment ? 'text.primary' : 'text.secondary'}>
+                                                        {transaction.comment || '-'}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    {formatMoney(transaction.amount, cur)}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    <IconButton color="error" onClick={() => void handleDelete(transaction.id)}>
+                                                        <DeleteOutlineIcon />
+                                                    </IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
                                     {transactions.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={7}>
-                                                {/* Подсказка, пока список операций пуст. */}
                                                 <Typography color="text.secondary">Добавленные через форму транзакции будут отображаться здесь.</Typography>
                                             </TableCell>
                                         </TableRow>
@@ -125,7 +130,6 @@ export const TransactionsPage = () => {
                 </Grid>
             </Grid>
 
-            {/* Подтверждение удаления транзакции. */}
             <ConfirmDialog
                 open={open}
                 title="Удалить транзакцию?"

@@ -42,7 +42,9 @@ public class AccountController {
         Account account = accountService.createAccount(
                 userId,
                 request.name(),
-                request.type()
+                request.type(),
+                request.currency(),
+                request.interestRate()
         );
 
         return ResponseEntity
@@ -76,7 +78,8 @@ public class AccountController {
                 userId,
                 accountId,
                 request.name(),
-                request.type()
+                request.type(),
+                request.currency()
         );
 
         return ResponseEntity.ok(accountMapper.toResponse(account));

@@ -37,6 +37,12 @@ public class Transaction {
     @Column(name = "comment_text", length = 500)
     private String comment;
 
+    @Column(name = "amount_in_rub", precision = 19, scale = 2)
+    private BigDecimal amountInRub;
+
+    @Column(name = "exchange_rate", precision = 19, scale = 6)
+    private BigDecimal exchangeRate;
+
     private boolean deleted;
 }
 

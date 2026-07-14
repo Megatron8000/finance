@@ -33,10 +33,14 @@ api.interceptors.request.use((config) => {
 });
 
 // При 401/403 очищает токен, чтобы пользователь прошёл повторную авторизацию.
+// Пропускает эндпоинты авторизации, чтобы не зациклить редирект.
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
+        const url = error.config?.url ?? '';
+        const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register');
+
+        if (!isAuthEndpoint && (error.response?.status === 401 || error.response?.status === 403)) {
             setStoredToken(null);
             window.location.href = '/login';
         }

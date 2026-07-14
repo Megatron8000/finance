@@ -8,23 +8,12 @@ import org.example.entity.Transaction;
 import org.example.entity.User;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Component
-/**
- * Маппер для преобразования DTO транзакций в сущности и обратно.
- */
 public class TransactionMapper {
 
-    /**
-     * Создает сущность {@link Transaction} из данных запроса и связанных доменных объектов.
-     *
-     * @param request  входящий запрос на создание транзакции
-     * @param user     владелец транзакции
-     * @param account  счет, связанный с транзакцией
-     * @param category категория, связанная с транзакцией
-     * @return заполненная сущность {@link Transaction} со сгенерированным идентификатором
-     */
     public Transaction toEntity(TransactionCreateRequest request, User user, Account account, Category category) {
         Transaction tx = new Transaction();
         tx.setId(UUID.randomUUID());
@@ -35,16 +24,12 @@ public class TransactionMapper {
         tx.setAmount(request.getAmount());
         tx.setTransactionDate(request.getTransactionDate());
         tx.setComment(normalizeComment(request.getComment()));
+        tx.setAmountInRub(request.getAmountInRub() != null ? request.getAmountInRub() : request.getAmount());
+        tx.setExchangeRate(BigDecimal.ONE);
         tx.setDeleted(false);
         return tx;
     }
 
-    /**
-     * Преобразует сущность {@link Transaction} в {@link TransactionResponse}.
-     *
-     * @param tx сущность транзакции
-     * @return результат маппинга или {@code null}, если входное значение равно {@code null}
-     */
     public TransactionResponse toResponse(Transaction tx) {
         if (tx == null) {
             return null;
@@ -54,10 +39,13 @@ public class TransactionMapper {
                 .id(tx.getId())
                 .accountId(tx.getAccount() != null ? tx.getAccount().getId() : null)
                 .accountName(tx.getAccount() != null ? tx.getAccount().getName() : null)
+                .accountCurrency(tx.getAccount() != null ? tx.getAccount().getCurrency() : null)
                 .categoryId(tx.getCategory() != null ? tx.getCategory().getId() : null)
                 .categoryName(tx.getCategory() != null ? tx.getCategory().getName() : null)
                 .type(tx.getType())
                 .amount(tx.getAmount())
+                .amountInRub(tx.getAmountInRub())
+                .exchangeRate(tx.getExchangeRate())
                 .transactionDate(tx.getTransactionDate())
                 .comment(tx.getComment())
                 .build();

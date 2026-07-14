@@ -8,8 +8,10 @@ interface BalanceChartProps {
 }
 
 export const BalanceChart = ({ accounts }: BalanceChartProps) => {
-    // Подготавливаем данные для графика: имя счета и числовой баланс.
-    const data = accounts.map((account) => ({ name: account.name, balance: toNumber(account.balance) }));
+    const data = accounts.map((account) => ({
+        name: account.name,
+        balance: toNumber(account.balance)
+    }));
 
     return (
         <Card>
@@ -19,13 +21,9 @@ export const BalanceChart = ({ accounts }: BalanceChartProps) => {
                 </Typography>
                 <ResponsiveContainer width="100%" height={260}>
                     <AreaChart data={data}>
-                        {/* Ось X показывает названия счетов. */}
                         <XAxis dataKey="name" />
-                        {/* Ось Y автоматически масштабируется под значения баланса. */}
                         <YAxis />
-                        {/* Всплывающая подсказка с данными при наведении. */}
                         <Tooltip />
-                        {/* Область графика: линия и заливка для поля balance. */}
                         <Area type="monotone" dataKey="balance" stroke="#1565c0" fill="#90caf9" />
                     </AreaChart>
                 </ResponsiveContainer>

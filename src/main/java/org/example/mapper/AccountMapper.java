@@ -5,17 +5,8 @@ import org.example.entity.Account;
 import org.springframework.stereotype.Component;
 
 @Component
-/**
- * Mapper для преобразования сущности {@link Account} в DTO ответа {@link AccountResponse}.
- */
 public class AccountMapper {
 
-    /**
-     * Преобразует сущность счета в DTO для отдачи наружу.
-     *
-     * @param account сущность счета
-     * @return DTO счета или {@code null}, если входной объект равен {@code null}
-     */
     public AccountResponse toResponse(Account account) {
         if (account == null) {
             return null;
@@ -25,6 +16,7 @@ public class AccountMapper {
                 account.getId(),
                 account.getName(),
                 account.getType(),
+                account.getCurrency(),
                 account.getBalance()
         );
     }

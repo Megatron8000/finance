@@ -24,11 +24,9 @@ import { AccountForm } from '../components/forms/AccountForm';
 import { useConfirm } from '../hooks/useConfirm';
 import { useAccountStore } from '../store/accountStore';
 import type { Account, AccountCreatePayload } from '../types/account';
-import { ACCOUNT_TYPE_LABELS } from '../types/account';
+import { ACCOUNT_TYPE_LABELS, CURRENCY_META } from '../types/account';
+import { CurrencyFlag } from '../components/common/CurrencyFlag';
 import { formatMoney, toNumber } from '../utils/money';
-
-const calculateTotalBalance = (accounts: Account[]) =>
-    accounts.reduce((sum, account) => sum + toNumber(account.balance), 0).toString();
 
 export const DashboardPage = () => {
     const { accounts, fetchAccounts, createAccount, updateAccount, deleteAccount, isLoading, error } = useAccountStore();
@@ -71,7 +69,6 @@ export const DashboardPage = () => {
         }
 
         await deleteAccount(account.id);
-        setTotalBalance(calculateTotalBalance(accounts.filter((item) => item.id !== account.id)));
         setDeletingAccount(null);
     };
 
@@ -88,7 +85,7 @@ export const DashboardPage = () => {
                 <Grid size={{ xs: 12, md: 4 }}>
                     <Card>
                         <CardContent>
-                            <Typography color="text.secondary" gutterBottom>Общий баланс</Typography>
+                            <Typography color="text.secondary" gutterBottom>Общий баланс (₽)</Typography>
                             <Typography variant="h4" fontWeight={700}>{formatMoney(totalBalance)}</Typography>
                         </CardContent>
                     </Card>
@@ -135,42 +132,50 @@ export const DashboardPage = () => {
                     <Stack spacing={2}>
                         <Typography variant="h6">Список счетов</Typography>
                         <Stack spacing={1.5}>
-                            {accounts.map((account) => (
-                                <Box
-                                    key={account.id}
-                                    sx={{
-                                        display: 'grid',
-                                        gridTemplateColumns: { xs: '1fr auto', sm: '1fr auto auto' },
-                                        gap: 1,
-                                        alignItems: 'center',
-                                        border: 1,
-                                        borderColor: 'divider',
-                                        borderRadius: 1,
-                                        px: 2,
-                                        py: 1.25
-                                    }}
-                                >
-                                    <Box sx={{ minWidth: 0 }}>
-                                        <Typography fontWeight={600} noWrap>{account.name}</Typography>
-                                        <Typography variant="body2" color="text.secondary">{ACCOUNT_TYPE_LABELS[account.type]}</Typography>
+                            {accounts.map((account) => {
+                                const curMeta = CURRENCY_META[account.currency];
+                                return (
+                                    <Box
+                                        key={account.id}
+                                        sx={{
+                                            display: 'grid',
+                                            gridTemplateColumns: { xs: '1fr auto', sm: '1fr auto auto' },
+                                            gap: 1,
+                                            alignItems: 'center',
+                                            border: 1,
+                                            borderColor: 'divider',
+                                            borderRadius: 1,
+                                            px: 2,
+                                            py: 1.25
+                                        }}
+                                    >
+                                        <Box sx={{ minWidth: 0 }}>
+                                            <Stack direction="row" spacing={1} alignItems="center">
+                                                <CurrencyFlag currency={account.currency} />
+                                                <Typography fontWeight={600} noWrap>{account.name}</Typography>
+                                            </Stack>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {ACCOUNT_TYPE_LABELS[account.type]} · {curMeta.symbol}
+                                            </Typography>
+                                        </Box>
+                                        <Typography fontWeight={700} sx={{ whiteSpace: 'nowrap' }}>
+                                            {formatMoney(toNumber(account.balance), account.currency)}
+                                        </Typography>
+                                        <Stack direction="row" spacing={0.5} sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' }, justifySelf: { xs: 'end', sm: 'auto' } }}>
+                                            <Tooltip title="Редактировать">
+                                                <IconButton aria-label="Редактировать счёт" onClick={() => setEditingAccount(account)}>
+                                                    <EditOutlinedIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Удалить">
+                                                <IconButton aria-label="Удалить счёт" color="error" onClick={() => void handleDeleteAccount(account)}>
+                                                    <DeleteOutlineIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Stack>
                                     </Box>
-                                    <Typography fontWeight={700} sx={{ whiteSpace: 'nowrap' }}>
-                                        {formatMoney(toNumber(account.balance))}
-                                    </Typography>
-                                    <Stack direction="row" spacing={0.5} sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' }, justifySelf: { xs: 'end', sm: 'auto' } }}>
-                                        <Tooltip title="Редактировать">
-                                            <IconButton aria-label="Редактировать счёт" onClick={() => setEditingAccount(account)}>
-                                                <EditOutlinedIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Удалить">
-                                            <IconButton aria-label="Удалить счёт" color="error" onClick={() => void handleDeleteAccount(account)}>
-                                                <DeleteOutlineIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Stack>
-                                </Box>
-                            ))}
+                                );
+                            })}
                         </Stack>
                     </Stack>
                 </CardContent>
@@ -181,7 +186,7 @@ export const DashboardPage = () => {
                 <DialogContent>
                     {editingAccount ? (
                         <AccountForm
-                            initialValues={{ name: editingAccount.name, type: editingAccount.type }}
+                            initialValues={{ name: editingAccount.name, type: editingAccount.type, currency: editingAccount.currency }}
                             submitLabel="Сохранить"
                             onSubmit={handleUpdateAccount}
                         />

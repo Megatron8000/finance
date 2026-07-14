@@ -6,6 +6,7 @@ import org.example.entity.Account;
 import org.example.entity.Category;
 import org.example.entity.Transaction;
 import org.example.entity.User;
+import org.example.enums.Currency;
 import org.example.enums.TransactionType;
 import org.example.mapper.TransactionMapper;
 import org.example.exception.NotFoundException;
@@ -17,6 +18,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -27,6 +30,7 @@ public class TransactionService {
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionMapper transactionMapper;
+    private final CurrencyService currencyService;
 
     @Transactional
     public UUID createTransaction(TransactionCreateRequest request, User user) {
@@ -40,7 +44,37 @@ public class TransactionService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new NotFoundException("Category not found"));
 
+        Currency accountCurrency = account.getCurrency();
+        LocalDate txDate = request.getTransactionDate();
+
+        if (txDate == null) {
+            txDate = LocalDate.now();
+        }
+
+        if (request.getType() == TransactionType.INCOME && accountCurrency != Currency.RUB
+                && request.getAmountInRub() != null && request.getAmountInRub().compareTo(BigDecimal.ZERO) > 0) {
+
+            BigDecimal rate = currencyService.getRateToRub(accountCurrency, txDate);
+            BigDecimal convertedAmount = currencyService.convertToAccountCurrency(
+                    request.getAmountInRub(), accountCurrency, txDate);
+
+            request.setAmount(convertedAmount);
+        }
+
         Transaction tx = transactionMapper.toEntity(request, user, account, category);
+
+        BigDecimal rate = currencyService.getRateToRub(accountCurrency, txDate);
+        tx.setExchangeRate(rate);
+
+        if (request.getType() == TransactionType.INCOME) {
+            if (request.getAmountInRub() != null && request.getAmountInRub().compareTo(BigDecimal.ZERO) > 0) {
+                tx.setAmountInRub(request.getAmountInRub());
+            } else {
+                tx.setAmountInRub(currencyService.convertToRub(tx.getAmount(), accountCurrency, txDate));
+            }
+        } else {
+            tx.setAmountInRub(currencyService.convertToRub(tx.getAmount(), accountCurrency, txDate));
+        }
 
         if (tx.getType() == TransactionType.EXPENSE) {
             if (account.getBalance().compareTo(tx.getAmount()) < 0) {

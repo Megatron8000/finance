@@ -11,44 +11,33 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/**
- * DTO для создания транзакции.
- */
 @Getter
 @Setter
 public class TransactionCreateRequest {
 
-    /**
-     * ID счёта.
-     */
     @NotNull
     private UUID accountId;
 
-    /**
-     * ID категории.
-     */
     @NotNull
     private UUID categoryId;
 
-    /**
-     * Тип операции (INCOME / EXPENSE).
-     */
     @NotNull
     private TransactionType type;
 
-    /**
-     * Сумма операции.
-     */
     @NotNull
     @Positive
     private BigDecimal amount;
 
-    /**
-     * Дата операции.
-     */
     @NotNull
     private LocalDate transactionDate;
 
     @Size(max = 500)
     private String comment;
+
+    /**
+     * Сумма в рублях для конвертации.
+     * Используется при пополнении валютного счёта.
+     * Если указано, amount — итоговая сумма в валюте счёта (рассчитывается бэкендом).
+     */
+    private BigDecimal amountInRub;
 }

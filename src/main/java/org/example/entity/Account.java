@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.example.enums.AccountType;
+import org.example.enums.Currency;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -28,13 +29,12 @@ public class Account {
     @Enumerated(EnumType.STRING)
     private AccountType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private Currency currency = Currency.RUB;
+
     private BigDecimal balance;
 
-    /**
-     * Вспомогательный метод для установки пользователя по id.
-     * Используется в сервисах, чтобы не тянуть User из БД,
-     * если он уже гарантированно существует.
-     */
     public void setUserId(UUID userId) {
         User user = new User();
         user.setId(userId);

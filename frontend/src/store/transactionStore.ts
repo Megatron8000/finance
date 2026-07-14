@@ -34,8 +34,13 @@ export const useTransactionStore = create<TransactionState>((set) => ({
                     {
                         id,
                         ...metadata,
-                        ...payload,
-                        amount: payload.amount.toString()
+                        accountId: payload.accountId,
+                        categoryId: payload.categoryId,
+                        type: payload.type,
+                        amount: payload.amount.toString(),
+                        transactionDate: payload.transactionDate,
+                        comment: payload.comment,
+                        amountInRub: payload.amountInRub != null ? payload.amountInRub.toString() : undefined,
                     },
                     ...state.transactions
                 ],

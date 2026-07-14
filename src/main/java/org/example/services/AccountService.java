@@ -6,6 +6,7 @@ import org.example.entity.Account;
 import org.example.mapper.AccountMapper;
 import org.example.entity.SavingsAccountDetails;
 import org.example.enums.AccountType;
+import org.example.enums.Currency;
 import org.example.exception.NotFoundException;
 import org.example.exception.ValidationException;
 import org.example.repository.AccountRepository;
@@ -31,7 +32,7 @@ public class AccountService {
     private final AccountMapper accountMapper;
 
     @Transactional
-    public Account createAccount(UUID userId, String name, AccountType type) {
+    public Account createAccount(UUID userId, String name, AccountType type, Currency currency, BigDecimal interestRate) {
         if (name == null || name.isBlank()) {
             throw new ValidationException("account name must not be empty");
         }
@@ -40,10 +41,14 @@ public class AccountService {
             throw new ValidationException("account type must not be null");
         }
 
-        Account account = accountRepository.save(buildAccount(userId, name, type));
+        if (currency == null) {
+            currency = Currency.RUB;
+        }
+
+        Account account = accountRepository.save(buildAccount(userId, name, type, currency));
 
         if (type == AccountType.SAVINGS) {
-            SavingsAccountDetails details = buildSavingsDetails(account);
+            SavingsAccountDetails details = buildSavingsDetails(account, interestRate);
             savingsRepository.save(details);
         }
 
@@ -57,7 +62,7 @@ public class AccountService {
     }
 
     @Transactional
-    public Account updateAccount(UUID userId, UUID accountId, String name, AccountType type) {
+    public Account updateAccount(UUID userId, UUID accountId, String name, AccountType type, Currency currency) {
         validateAccountData(name, type);
 
         Account account = accountRepository.findOwnedById(accountId, userId)
@@ -66,6 +71,10 @@ public class AccountService {
         AccountType previousType = account.getType();
         account.setName(name.trim());
         account.setType(type);
+
+        if (currency != null) {
+            account.setCurrency(currency);
+        }
 
         syncSavingsDetails(account, previousType, type);
 
@@ -82,12 +91,13 @@ public class AccountService {
         accountRepository.delete(account);
     }
 
-    private Account buildAccount(UUID userId, String name, AccountType type) {
+    private Account buildAccount(UUID userId, String name, AccountType type, Currency currency) {
         Account account = new Account();
         account.setId(UUID.randomUUID());
         account.setUserId(userId);
         account.setName(name.trim());
         account.setType(type);
+        account.setCurrency(currency);
         account.setBalance(BigDecimal.ZERO);
         return account;
     }
@@ -108,7 +118,7 @@ public class AccountService {
         }
 
         if (newType == AccountType.SAVINGS) {
-            savingsRepository.save(buildSavingsDetails(account));
+            savingsRepository.save(buildSavingsDetails(account, BigDecimal.ZERO));
             return;
         }
 
@@ -117,12 +127,12 @@ public class AccountService {
         }
     }
 
-    private SavingsAccountDetails buildSavingsDetails(Account account) {
+    private SavingsAccountDetails buildSavingsDetails(Account account, BigDecimal interestRate) {
         LocalDate today = LocalDate.now(clock);
 
         SavingsAccountDetails details = new SavingsAccountDetails();
         details.setAccount(account);
-        details.setInterestRate(BigDecimal.ZERO);
+        details.setInterestRate(interestRate != null ? interestRate : BigDecimal.ZERO);
         details.setStartDate(today);
         details.setLastCapitalizationDate(today);
 

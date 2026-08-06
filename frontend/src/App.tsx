@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { useAuth } from './hooks/useAuth';
 import { LoginPage } from './pages/LoginPage';
@@ -12,12 +13,14 @@ const ProtectedRoutes = () => {
 
 export default function App() {
     return (
-        <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<ProtectedRoutes />}>
-                <Route path="/" element={<MainPage />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <ThemeProvider>
+            <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route element={<ProtectedRoutes />}>
+                    <Route path="/" element={<MainPage />} />
+                </Route>
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </ThemeProvider>
     );
 }

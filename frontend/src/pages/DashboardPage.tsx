@@ -16,34 +16,57 @@ import {
     Typography
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
-import { analyticsApi } from '../api/analyticsApi';
 import { BalanceChart } from '../components/charts/BalanceChart';
+import { AccountFilter } from '../components/common/AccountFilter';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { Loader } from '../components/common/Loader';
 import { AccountForm } from '../components/forms/AccountForm';
 import { useConfirm } from '../hooks/useConfirm';
 import { useAccountStore } from '../store/accountStore';
-import type { Account, AccountCreatePayload } from '../types/account';
+import type { Account, AccountCreatePayload, Currency } from '../types/account';
 import { ACCOUNT_TYPE_LABELS, CURRENCY_META } from '../types/account';
 import { CurrencyFlag } from '../components/common/CurrencyFlag';
 import { formatMoney, toNumber } from '../utils/money';
 
+const FALLBACK_RATES_TO_RUB: Record<Currency, number> = {
+    RUB: 1,
+    USD: 90.00,
+    CNY: 12.50,
+    BYN: 28.00,
+    AED: 24.50,
+};
+
+function computeTotalBalanceRUB(accounts: Account[]): number {
+    return accounts.reduce((sum, a) => sum + toNumber(a.balance) * FALLBACK_RATES_TO_RUB[a.currency], 0);
+}
+
 export const DashboardPage = () => {
     const { accounts, fetchAccounts, createAccount, updateAccount, deleteAccount, isLoading, error } = useAccountStore();
-    const [totalBalance, setTotalBalance] = useState('0');
-    const [balanceError, setBalanceError] = useState<string | null>(null);
+    const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
     const [editingAccount, setEditingAccount] = useState<Account | null>(null);
     const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
     const confirmDelete = useConfirm();
 
     useEffect(() => {
         void fetchAccounts();
-        void analyticsApi.getBalance().then((data) => setTotalBalance(data.totalBalance)).catch((err: Error) => setBalanceError(err.message));
     }, [fetchAccounts]);
 
+    useEffect(() => {
+        if (accounts.length > 0 && selectedAccountIds.length === 0) {
+            setSelectedAccountIds(accounts.map((a) => a.id));
+        }
+    }, [accounts, selectedAccountIds.length]);
+
+    const filteredAccounts = useMemo(
+        () => accounts.filter((a) => selectedAccountIds.includes(a.id)),
+        [accounts, selectedAccountIds]
+    );
+
+    const totalBalance = useMemo(() => computeTotalBalanceRUB(filteredAccounts), [filteredAccounts]);
+
     const savingsCount = useMemo(
-        () => accounts.filter((account) => account.type === 'SAVINGS').length,
-        [accounts]
+        () => filteredAccounts.filter((account) => account.type === 'SAVINGS').length,
+        [filteredAccounts]
     );
 
     const handleCreateAccount = async (payload: AccountCreatePayload) => {
@@ -72,6 +95,10 @@ export const DashboardPage = () => {
         setDeletingAccount(null);
     };
 
+    const handleAccountFilterChange = (ids: string[]) => {
+        setSelectedAccountIds(ids);
+    };
+
     if (isLoading && accounts.length === 0) {
         return <Loader />;
     }
@@ -79,7 +106,17 @@ export const DashboardPage = () => {
     return (
         <Stack spacing={3}>
             {error ? <Alert severity="error">{error}</Alert> : null}
-            {balanceError ? <Alert severity="warning">{balanceError}</Alert> : null}
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                <Typography variant="h5" fontWeight={700}>Управление личными финансами</Typography>
+                {accounts.length > 0 && (
+                    <AccountFilter
+                        accounts={accounts}
+                        selectedIds={selectedAccountIds}
+                        onChange={handleAccountFilterChange}
+                    />
+                )}
+            </Box>
 
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -94,7 +131,7 @@ export const DashboardPage = () => {
                     <Card>
                         <CardContent>
                             <Typography color="text.secondary" gutterBottom>Количество счетов</Typography>
-                            <Typography variant="h4" fontWeight={700}>{accounts.length}</Typography>
+                            <Typography variant="h4" fontWeight={700}>{filteredAccounts.length}</Typography>
                         </CardContent>
                     </Card>
                 </Grid>
@@ -110,7 +147,7 @@ export const DashboardPage = () => {
 
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, lg: 8 }}>
-                    <BalanceChart accounts={accounts} />
+                    <BalanceChart accounts={filteredAccounts} />
                 </Grid>
                 <Grid size={{ xs: 12, lg: 4 }}>
                     <Card>

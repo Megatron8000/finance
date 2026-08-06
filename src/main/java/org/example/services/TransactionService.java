@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -89,6 +90,10 @@ public class TransactionService {
         transactionRepository.save(tx);
 
         return tx.getId();
+    }
+
+    public List<Transaction> listTransactions(User user, LocalDate from, LocalDate to) {
+        return transactionRepository.findAllByUserIdAndDateRange(user.getId(), from, to);
     }
 
     @Transactional

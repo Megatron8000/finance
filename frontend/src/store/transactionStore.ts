@@ -8,8 +8,12 @@ interface TransactionState {
     transactions: Transaction[];
     // Флаг выполнения операции создания/удаления.
     isSaving: boolean;
+    // Флаг загрузки списка.
+    isLoading: boolean;
     // Текст последней ошибки операции.
     error: string | null;
+    // Загружает транзакции из API за указанный период.
+    fetchTransactions: (from: string, to: string) => Promise<void>;
     // Добавляет транзакцию через API и обновляет локальный список.
     addTransaction: (payload: TransactionCreatePayload, metadata?: Partial<Transaction>) => Promise<void>;
     // Удаляет транзакцию через API и из локального списка.
@@ -24,7 +28,17 @@ const formatError = (error: unknown) =>
 export const useTransactionStore = create<TransactionState>((set) => ({
     transactions: [],
     isSaving: false,
+    isLoading: false,
     error: null,
+    fetchTransactions: async (from, to) => {
+        set({ isLoading: true, error: null });
+        try {
+            const data = await transactionApi.getAll(from, to);
+            set({ transactions: data, isLoading: false });
+        } catch (error) {
+            set({ error: formatError(error), isLoading: false });
+        }
+    },
     addTransaction: async (payload, metadata = {}) => {
         set({ isSaving: true, error: null });
         try {

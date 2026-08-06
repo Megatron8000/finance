@@ -1,5 +1,5 @@
 ﻿import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { Alert, Card, CardContent, Chip, Grid, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { Alert, Card, CardContent, Chip, Grid, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { categoryApi } from '../api/categoryApi';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -9,15 +9,17 @@ import { useAccountStore } from '../store/accountStore';
 import { useTransactionStore } from '../store/transactionStore';
 import type { Category } from '../types/category';
 import { CurrencyFlag } from '../components/common/CurrencyFlag';
-import { formatDate } from '../utils/date';
+import { today } from '../utils/date';
 import { formatMoney } from '../utils/money';
 
 export const TransactionsPage = () => {
     const { accounts, fetchAccounts } = useAccountStore();
-    const { transactions, addTransaction, removeTransaction, error } = useTransactionStore();
+    const { transactions, fetchTransactions, addTransaction, removeTransaction, isLoading, error } = useTransactionStore();
     const [categories, setCategories] = useState<Category[]>([]);
     const [categoriesError, setCategoriesError] = useState<string | null>(null);
     const { open, confirm, handleClose } = useConfirm();
+    const [dateFrom, setDateFrom] = useState(today());
+    const [dateTo, setDateTo] = useState(today());
 
     useEffect(() => {
         void fetchAccounts();
@@ -26,25 +28,43 @@ export const TransactionsPage = () => {
             .catch((err: Error) => setCategoriesError(err.message));
     }, [fetchAccounts]);
 
+    useEffect(() => {
+        if (dateFrom && dateTo) {
+            void fetchTransactions(dateFrom, dateTo);
+        }
+    }, [dateFrom, dateTo, fetchTransactions]);
+
     const handleAddTransaction = async (payload: Parameters<typeof addTransaction>[0]) => {
         const account = accounts.find((item) => item.id === payload.accountId);
         const category = categories.find((item) => item.id === payload.categoryId);
 
         await addTransaction(payload, {
             accountName: account?.name,
-            categoryName: category?.name
+            categoryName: category?.name,
+            accountCurrency: account?.currency,
         });
+
+        if (dateFrom && dateTo) {
+            void fetchTransactions(dateFrom, dateTo);
+        }
     };
 
     const handleDelete = async (id: string) => {
         const accepted = await confirm();
         if (accepted) {
             await removeTransaction(id);
+            if (dateFrom && dateTo) {
+                void fetchTransactions(dateFrom, dateTo);
+            }
         }
     };
 
     const handleCategoryCreated = (category: Category) => {
         setCategories((prev) => [...prev, category]);
+    };
+
+    const handleDateChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        setter(e.target.value);
     };
 
     const canCreate = accounts.length > 0;
@@ -70,9 +90,29 @@ export const TransactionsPage = () => {
                 <Grid size={{ xs: 12, lg: 8 }}>
                     <Card>
                         <CardContent>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={1}>
                                 <Typography variant="h6">Журнал транзакций</Typography>
-                                <Chip label={`${transactions.length} записей`} color="primary" variant="outlined" />
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <TextField
+                                        label="С"
+                                        type="date"
+                                        size="small"
+                                        value={dateFrom}
+                                        onChange={handleDateChange(setDateFrom)}
+                                        slotProps={{ inputLabel: { shrink: true } }}
+                                        sx={{ minWidth: 150 }}
+                                    />
+                                    <TextField
+                                        label="По"
+                                        type="date"
+                                        size="small"
+                                        value={dateTo}
+                                        onChange={handleDateChange(setDateTo)}
+                                        slotProps={{ inputLabel: { shrink: true } }}
+                                        sx={{ minWidth: 150 }}
+                                    />
+                                    <Chip label={`${transactions.length} записей`} color="primary" variant="outlined" />
+                                </Stack>
                             </Stack>
                             <Table size="small">
                                 <TableHead>
@@ -87,11 +127,23 @@ export const TransactionsPage = () => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {transactions.map((transaction) => {
+                                    {isLoading ? (
+                                        <TableRow>
+                                            <TableCell colSpan={7}>
+                                                <Typography color="text.secondary" textAlign="center">Загрузка...</Typography>
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : transactions.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={7}>
+                                                <Typography color="text.secondary">Нет транзакций за выбранный период.</Typography>
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : transactions.map((transaction) => {
                                         const cur = transaction.accountCurrency;
                                         return (
                                             <TableRow key={transaction.id} hover>
-                                                <TableCell>{formatDate(transaction.transactionDate)}</TableCell>
+                                                <TableCell>{transaction.transactionDate}</TableCell>
                                                 <TableCell>
                                                     <Stack direction="row" spacing={0.5} alignItems="center">
                                                         {cur && <CurrencyFlag currency={cur} size={16} />}
@@ -116,13 +168,6 @@ export const TransactionsPage = () => {
                                             </TableRow>
                                         );
                                     })}
-                                    {transactions.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={7}>
-                                                <Typography color="text.secondary">Добавленные через форму транзакции будут отображаться здесь.</Typography>
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : null}
                                 </TableBody>
                             </Table>
                         </CardContent>

@@ -87,4 +87,19 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             @Param("accountId") UUID accountId,
             @Param("userId") UUID userId
     );
+
+    @Query("""
+        select t from Transaction t
+        join fetch t.account
+        join fetch t.category
+        where t.user.id = :userId
+          and t.deleted = false
+          and t.transactionDate between :from and :to
+        order by t.transactionDate desc, t.id desc
+    """)
+    List<Transaction> findAllByUserIdAndDateRange(
+            @Param("userId") UUID userId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to
+    );
 }

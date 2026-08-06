@@ -3,13 +3,19 @@ package org.example.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.transaction.TransactionCreateRequest;
+import org.example.dto.transaction.TransactionResponse;
+import org.example.entity.Transaction;
 import org.example.entity.User;
+import org.example.mapper.TransactionMapper;
 import org.example.services.TransactionService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -22,6 +28,23 @@ public class TransactionController {
 
     // Сервис бизнес-логики транзакций
     private final TransactionService transactionService;
+    private final TransactionMapper transactionMapper;
+
+    /**
+     * Получение списка транзакций за период
+     */
+    @GetMapping
+    public ResponseEntity<List<TransactionResponse>> list(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @AuthenticationPrincipal User user
+    ) {
+        List<Transaction> transactions = transactionService.listTransactions(user, from, to);
+        List<TransactionResponse> response = transactions.stream()
+                .map(transactionMapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(response);
+    }
 
     /**
      * Создание новой транзакции

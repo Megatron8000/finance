@@ -15,6 +15,7 @@ export interface Transaction {
     amountInRub?: string;
     exchangeRate?: string;
     transactionDate: string;
+    createdAt?: string;
     comment?: string | null;
 }
 

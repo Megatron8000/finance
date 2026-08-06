@@ -10,6 +10,7 @@ import org.example.enums.TransactionType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -31,6 +32,9 @@ public class TransactionResponse {
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate transactionDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
 
     private String comment;
 }

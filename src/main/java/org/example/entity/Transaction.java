@@ -7,6 +7,7 @@ import org.example.enums.TransactionType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -44,5 +45,8 @@ public class Transaction {
     private BigDecimal exchangeRate;
 
     private boolean deleted;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 }
 

@@ -9,6 +9,7 @@ import org.example.entity.User;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Component
@@ -27,6 +28,7 @@ public class TransactionMapper {
         tx.setAmountInRub(request.getAmountInRub() != null ? request.getAmountInRub() : request.getAmount());
         tx.setExchangeRate(BigDecimal.ONE);
         tx.setDeleted(false);
+        tx.setCreatedAt(LocalDateTime.now());
         return tx;
     }
 
@@ -47,6 +49,7 @@ public class TransactionMapper {
                 .amountInRub(tx.getAmountInRub())
                 .exchangeRate(tx.getExchangeRate())
                 .transactionDate(tx.getTransactionDate())
+                .createdAt(tx.getCreatedAt())
                 .comment(tx.getComment())
                 .build();
     }

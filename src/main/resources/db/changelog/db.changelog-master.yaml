@@ -19,3 +19,5 @@ databaseChangeLog:
       file: db/changelog/008-add-account-currency.yaml
   - include:
       file: db/changelog/009-add-transaction-currency-fields.yaml
+  - include:
+      file: db/changelog/010-add-transaction-created-at.yaml

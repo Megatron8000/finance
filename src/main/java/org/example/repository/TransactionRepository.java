@@ -95,7 +95,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
         where t.user.id = :userId
           and t.deleted = false
           and t.transactionDate between :from and :to
-        order by t.transactionDate desc, t.id desc
+        order by t.createdAt asc
     """)
     List<Transaction> findAllByUserIdAndDateRange(
             @Param("userId") UUID userId,

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { savingsApi } from '../api/savingsApi';
 import { SavingsForm } from '../components/forms/SavingsForm';
 import { useAccountStore } from '../store/accountStore';
+import { formatMoney, toNumber } from '../utils/money';
 
 export const SavingsPage = () => {
     const { accounts, fetchAccounts } = useAccountStore();
@@ -56,7 +57,12 @@ export const SavingsPage = () => {
                         <Typography variant="h6">Доступные накопительные счета</Typography>
                         <Stack direction="row" gap={1} flexWrap="wrap">
                             {savingsAccounts.map((account) => (
-                                <Chip key={account.id} label={account.name} color="secondary" variant="outlined" />
+                                <Chip
+                                    key={account.id}
+                                    label={`${account.name} — ${formatMoney(toNumber(account.balance), account.currency)}`}
+                                    color="secondary"
+                                    variant="outlined"
+                                />
                             ))}
                         </Stack>
                     </Stack>

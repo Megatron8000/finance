@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.transaction.TransactionCreateRequest;
 import org.example.dto.transaction.TransactionResponse;
+import org.example.dto.transaction.TransferRequest;
 import org.example.entity.Transaction;
 import org.example.entity.User;
 import org.example.mapper.TransactionMapper;
@@ -81,5 +82,24 @@ public class TransactionController {
         transactionService.deleteTransaction(id, user);
 
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Перевод между счетами
+     *
+     * @param request DTO запроса перевода
+     * @param user текущий авторизованный пользователь
+     * @return UUID созданной транзакции
+     */
+    @PostMapping("/transfer")
+    public ResponseEntity<UUID> transfer(
+            @Valid @RequestBody TransferRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        UUID transactionId = transactionService.transfer(request, user);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(transactionId);
     }
 }

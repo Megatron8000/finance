@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface CategoryRepository extends JpaRepository<Category, UUID> {
@@ -31,4 +32,6 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
             @Param("type") CategoryType type,
             @Param("user") User user
     );
+
+    Optional<Category> findByName(String name);
 }

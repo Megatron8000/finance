@@ -1,7 +1,7 @@
 import type { CategoryType } from './category';
 import type { Currency } from './account';
 
-export type TransactionType = CategoryType;
+export type TransactionType = CategoryType | 'TRANSFER';
 
 export interface Transaction {
     id: string;
@@ -27,4 +27,12 @@ export interface TransactionCreatePayload {
     transactionDate: string;
     comment?: string | null;
     amountInRub?: number | null;
+}
+
+export interface TransferPayload {
+    fromAccountId: string;
+    toAccountId: string;
+    amount: number;
+    transactionDate: string;
+    comment?: string | null;
 }

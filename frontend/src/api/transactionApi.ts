@@ -1,5 +1,5 @@
 import { api } from './axios';
-import type { Transaction, TransactionCreatePayload } from '../types/transaction';
+import type { Transaction, TransactionCreatePayload, TransferPayload } from '../types/transaction';
 
 // Клиентский API для операций с транзакциями.
 export const transactionApi = {
@@ -16,5 +16,10 @@ export const transactionApi = {
     // Удаляет транзакцию по её идентификатору.
     remove: async (id: string) => {
         await api.delete(`/transactions/${id}`);
+    },
+    // Перевод между счетами.
+    transfer: async (payload: TransferPayload) => {
+        const { data } = await api.post<string>('/transactions/transfer', payload);
+        return data;
     }
 };

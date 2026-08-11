@@ -8,7 +8,7 @@ import type { Account } from '../../types/account';
 import { CURRENCY_META } from '../../types/account';
 import { CurrencyFlag } from '../common/CurrencyFlag';
 import type { Category, CategoryType } from '../../types/category';
-import type { TransactionCreatePayload, TransactionType } from '../../types/transaction';
+import type { TransactionCreatePayload, TransactionType, TransferPayload } from '../../types/transaction';
 import { today } from '../../utils/date';
 
 interface TransactionFormProps {
@@ -16,11 +16,12 @@ interface TransactionFormProps {
     categories: Category[];
     onCategoryCreated: (category: Category) => void;
     onSubmit: (payload: TransactionCreatePayload) => Promise<void>;
+    onTransfer?: (payload: TransferPayload) => Promise<void>;
 }
 
-const transactionTypes: TransactionType[] = ['INCOME', 'EXPENSE'];
+const transactionTypes: TransactionType[] = ['INCOME', 'EXPENSE', 'TRANSFER'];
 
-export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSubmit }: TransactionFormProps) => {
+export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSubmit, onTransfer }: TransactionFormProps) => {
     const { control, watch, handleSubmit, reset, setValue, formState: { isSubmitting } } = useForm<TransactionCreatePayload>({
         defaultValues: {
             accountId: '',
@@ -40,12 +41,14 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
 
     const type = watch('type');
     const accountId = watch('accountId');
-    const filteredCategories = categories.filter((category) => category.type === type);
+    const filteredCategories = categories.filter((category) => category.type === (type === 'TRANSFER' ? 'EXPENSE' : type));
 
     const selectedAccount = accounts.find((a) => a.id === accountId);
     const isForeignCurrency = selectedAccount && selectedAccount.currency !== 'RUB';
     const showConversion = isForeignCurrency && type === 'INCOME';
     const currencyInfo = selectedAccount ? CURRENCY_META[selectedAccount.currency] : null;
+
+    const isTransfer = type === 'TRANSFER';
 
     const handleCreateCategory = async () => {
         const name = newCategoryName.trim();
@@ -54,7 +57,8 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
         setIsCreatingCategory(true);
         setCategoryError(null);
         try {
-            const category = await categoryApi.create({ name, type: type as CategoryType });
+            const categoryType = type === 'TRANSFER' ? 'EXPENSE' : (type as CategoryType);
+            const category = await categoryApi.create({ name, type: categoryType });
             onCategoryCreated(category);
             setValue('categoryId', category.id);
             setNewCategoryName('');
@@ -68,6 +72,18 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
 
     return (
         <Stack component="form" spacing={2} onSubmit={handleSubmit(async (values) => {
+            if (isTransfer && onTransfer) {
+                const transferValues = values as TransactionCreatePayload & { toAccountId?: string };
+                await onTransfer({
+                    fromAccountId: values.accountId,
+                    toAccountId: transferValues.toAccountId || '',
+                    amount: Number(values.amount),
+                    transactionDate: values.transactionDate,
+                    comment: values.comment?.trim() || null
+                });
+                reset({ accountId: '', categoryId: '', type, amount: 0, transactionDate: today(), comment: '', amountInRub: null });
+                return;
+            }
             const comment = values.comment?.trim() || null;
             const amountInRub = showConversion && values.amountInRub ? Number(values.amountInRub) : null;
             await onSubmit({ ...values, amount: Number(values.amount), comment, amountInRub });
@@ -79,7 +95,7 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
                 render={({ field }) => (
                     <TextField {...field} select label="Тип операции">
                         {transactionTypes.map((item) => (
-                            <MenuItem key={item} value={item}>{item === 'INCOME' ? 'Пополнение' : 'Расход'}</MenuItem>
+                            <MenuItem key={item} value={item}>{item === 'INCOME' ? 'Пополнение' : item === 'EXPENSE' ? 'Расход' : 'Между счетами'}</MenuItem>
                         ))}
                     </TextField>
                 )}
@@ -89,7 +105,7 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
                 control={control}
                 rules={{ required: 'Выберите счёт' }}
                 render={({ field, fieldState }) => (
-                    <TextField {...field} select label="Счёт" error={!!fieldState.error} helperText={fieldState.error?.message}>
+                    <TextField {...field} select label={isTransfer ? 'Счёт списания' : 'Счёт'} error={!!fieldState.error} helperText={fieldState.error?.message}>
                         {accounts.map((account) => {
                             const meta = CURRENCY_META[account.currency];
                             return (
@@ -104,70 +120,95 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
                     </TextField>
                 )}
             />
-            {selectedAccount && (
+            {isTransfer && (
+                <Controller
+                    name="categoryId"
+                    control={control}
+                    render={({ field }) => (
+                        <TextField {...field} select label="Счёт зачисления">
+                            {accounts.filter((a) => a.id !== accountId).map((account) => {
+                                const meta = CURRENCY_META[account.currency];
+                                return (
+                                    <MenuItem key={account.id} value={account.id}>
+                                        <Stack direction="row" spacing={1} alignItems="center">
+                                            <CurrencyFlag currency={account.currency} />
+                                            <span>{account.name} ({meta.symbol})</span>
+                                        </Stack>
+                                    </MenuItem>
+                                );
+                            })}
+                        </TextField>
+                    )}
+                />
+            )}
+            {selectedAccount && !isTransfer && (
                 <Alert severity="info" sx={{ py: 0 }}>
                     Валюта счёта: {currencyInfo?.flag} {currencyInfo?.label}
                 </Alert>
             )}
-            <Controller
-                name="categoryId"
-                control={control}
-                rules={{ required: 'Выберите категорию' }}
-                render={({ field, fieldState }) => (
-                    <TextField {...field} select label="Категория" error={!!fieldState.error} helperText={fieldState.error?.message}>
-                        {filteredCategories.map((category) => (
-                            <MenuItem key={category.id} value={category.id}>
-                                {category.system ? '📌 ' : ''}{category.name}
-                            </MenuItem>
-                        ))}
-                    </TextField>
-                )}
-            />
-
-            {!showNewCategory ? (
-                <Chip
-                    icon={<AddIcon />}
-                    label="Добавить свою категорию"
-                    size="small"
-                    variant="outlined"
-                    color="primary"
-                    onClick={() => setShowNewCategory(true)}
-                    sx={{ alignSelf: 'flex-start', cursor: 'pointer' }}
-                />
-            ) : (
-                <Stack spacing={1}>
-                    <Typography variant="body2" color="text.secondary">
-                        Новая категория «{type === 'INCOME' ? 'Доход' : 'Расход'}»
-                    </Typography>
-                    <TextField
-                        size="small"
-                        label="Название категории"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleCreateCategory(); } }}
-                        error={!!categoryError}
-                        helperText={categoryError}
-                        autoFocus
+            {!isTransfer && (
+                <>
+                    <Controller
+                        name="categoryId"
+                        control={control}
+                        rules={{ required: 'Выберите категорию' }}
+                        render={({ field, fieldState }) => (
+                            <TextField {...field} select label="Категория" error={!!fieldState.error} helperText={fieldState.error?.message}>
+                                {filteredCategories.map((category) => (
+                                    <MenuItem key={category.id} value={category.id}>
+                                        {category.system ? '📌 ' : ''}{category.name}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        )}
                     />
-                    <Stack direction="row" spacing={1}>
-                        <Button
-                            size="small"
-                            variant="contained"
-                            disabled={!newCategoryName.trim() || isCreatingCategory}
-                            onClick={() => void handleCreateCategory()}
-                        >
-                            {isCreatingCategory ? 'Создание...' : 'Создать'}
-                        </Button>
-                        <Button
+
+                    {!showNewCategory ? (
+                        <Chip
+                            icon={<AddIcon />}
+                            label="Добавить свою категорию"
                             size="small"
                             variant="outlined"
-                            startIcon={<CloseIcon />}
-                            onClick={() => { setShowNewCategory(false); setNewCategoryName(''); setCategoryError(null); }}
-                        >
-                            Отмена
-                        </Button>
-                    </Stack>
-                </Stack>
+                            color="primary"
+                            onClick={() => setShowNewCategory(true)}
+                            sx={{ alignSelf: 'flex-start', cursor: 'pointer' }}
+                        />
+                    ) : (
+                        <Stack spacing={1}>
+                            <Typography variant="body2" color="text.secondary">
+                                Новая категория «{type === 'INCOME' ? 'Доход' : 'Расход'}»
+                            </Typography>
+                            <TextField
+                                size="small"
+                                label="Название категории"
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleCreateCategory(); } }}
+                                error={!!categoryError}
+                                helperText={categoryError}
+                                autoFocus
+                            />
+                            <Stack direction="row" spacing={1}>
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    disabled={!newCategoryName.trim() || isCreatingCategory}
+                                    onClick={() => void handleCreateCategory()}
+                                >
+                                    {isCreatingCategory ? 'Создание...' : 'Создать'}
+                                </Button>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<CloseIcon />}
+                                    onClick={() => { setShowNewCategory(false); setNewCategoryName(''); setCategoryError(null); }}
+                                >
+                                    Отмена
+                                </Button>
+                            </Stack>
+                        </Stack>
+                    )}
+                </>
             )}
 
             {showConversion && (
@@ -231,7 +272,7 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
                     />
                 )}
             />
-            <Button type="submit" variant="contained" disabled={isSubmitting}>Сохранить транзакцию</Button>
+            <Button type="submit" variant="contained" disabled={isSubmitting}>{isTransfer ? 'Перевести' : 'Сохранить транзакцию'}</Button>
         </Stack>
     );
 };

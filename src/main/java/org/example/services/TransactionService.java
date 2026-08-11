@@ -2,11 +2,13 @@ package org.example.services;
 
 import lombok.RequiredArgsConstructor;
 import org.example.dto.transaction.TransactionCreateRequest;
+import org.example.dto.transaction.TransferRequest;
 import org.example.entity.Account;
 import org.example.entity.Category;
 import org.example.entity.Transaction;
 import org.example.entity.User;
 import org.example.enums.Currency;
+import org.example.enums.CategoryType;
 import org.example.enums.TransactionType;
 import org.example.mapper.TransactionMapper;
 import org.example.exception.NotFoundException;
@@ -90,6 +92,85 @@ public class TransactionService {
         transactionRepository.save(tx);
 
         return tx.getId();
+    }
+
+    @Transactional
+    public UUID transfer(TransferRequest request, User user) {
+        Account fromAccount = accountRepository.findById(request.getFromAccountId())
+                .orElseThrow(() -> new NotFoundException("Source account not found"));
+
+        Account toAccount = accountRepository.findById(request.getToAccountId())
+                .orElseThrow(() -> new NotFoundException("Destination account not found"));
+
+        if (!fromAccount.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("Access denied to source account");
+        }
+
+        if (!toAccount.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("Access denied to destination account");
+        }
+
+        if (fromAccount.getId().equals(toAccount.getId())) {
+            throw new ValidationException("Cannot transfer to the same account");
+        }
+
+        if (fromAccount.getBalance().compareTo(request.getAmount()) < 0) {
+            throw new ValidationException("Insufficient funds on source account");
+        }
+
+        LocalDate txDate = request.getTransactionDate();
+        if (txDate == null) {
+            txDate = LocalDate.now();
+        }
+
+        Category transferCategory = categoryRepository.findByName("Перевод между счетами")
+                .orElseGet(() -> {
+                    Category cat = new Category();
+                    cat.setName("Перевод между счетами");
+                    cat.setType(CategoryType.EXPENSE);
+                    cat.setSystem(true);
+                    return categoryRepository.save(cat);
+                });
+
+        BigDecimal rate = currencyService.getRateToRub(fromAccount.getCurrency(), txDate);
+
+        Transaction expenseTx = new Transaction();
+        expenseTx.setId(UUID.randomUUID());
+        expenseTx.setUser(user);
+        expenseTx.setAccount(fromAccount);
+        expenseTx.setCategory(transferCategory);
+        expenseTx.setType(TransactionType.EXPENSE);
+        expenseTx.setAmount(request.getAmount());
+        expenseTx.setTransactionDate(txDate);
+        expenseTx.setComment(request.getComment() != null ? request.getComment().trim() : null);
+        expenseTx.setAmountInRub(currencyService.convertToRub(request.getAmount(), fromAccount.getCurrency(), txDate));
+        expenseTx.setExchangeRate(rate);
+        expenseTx.setDeleted(false);
+        expenseTx.setCreatedAt(java.time.LocalDateTime.now());
+
+        Transaction incomeTx = new Transaction();
+        incomeTx.setId(UUID.randomUUID());
+        incomeTx.setUser(user);
+        incomeTx.setAccount(toAccount);
+        incomeTx.setCategory(transferCategory);
+        incomeTx.setType(TransactionType.INCOME);
+        incomeTx.setAmount(request.getAmount());
+        incomeTx.setTransactionDate(txDate);
+        incomeTx.setComment(request.getComment() != null ? request.getComment().trim() : null);
+        incomeTx.setAmountInRub(currencyService.convertToRub(request.getAmount(), toAccount.getCurrency(), txDate));
+        incomeTx.setExchangeRate(currencyService.getRateToRub(toAccount.getCurrency(), txDate));
+        incomeTx.setDeleted(false);
+        incomeTx.setCreatedAt(java.time.LocalDateTime.now());
+
+        fromAccount.setBalance(fromAccount.getBalance().subtract(request.getAmount()));
+        toAccount.setBalance(toAccount.getBalance().add(request.getAmount()));
+
+        accountRepository.save(fromAccount);
+        accountRepository.save(toAccount);
+        transactionRepository.save(expenseTx);
+        transactionRepository.save(incomeTx);
+
+        return expenseTx.getId();
     }
 
     public List<Transaction> listTransactions(User user, LocalDate from, LocalDate to) {

@@ -201,6 +201,7 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
                         helperText={fieldState.error?.message}
                         inputProps={{ step: 0.01 }}
                         slotProps={{ input: { readOnly: showConversion } }}
+                        sx={{ '& input[type=number]::-webkit-inner-spin-button, & input[type=number]::-webkit-outer-spin-button': { WebkitAppearance: 'none', m: 0 }, '& input[type=number]': { MozAppearance: 'textfield' } }}
                     />
                 )}
             />

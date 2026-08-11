@@ -4,8 +4,8 @@ services:
     container_name: finance-db
     environment:
       POSTGRES_DB: finance_db
-      POSTGRES_USER: finance_user
-      POSTGRES_PASSWORD: finance_password
+      POSTGRES_USER: finance_admin
+      POSTGRES_PASSWORD: 9mul3WIEevf_1ZP_mfwL5cS4ic3rZ2
     ports:
       - "5433:5432"
     volumes:
@@ -24,9 +24,9 @@ services:
     environment:
       SERVER_PORT: 8081
       DB_URL: jdbc:postgresql://db:5432/finance_db
-      DB_USERNAME: finance_user
-      DB_PASSWORD: finance_password
-      JWT_SECRET: CHANGE_ME_TO_32+_CHARS_SECRET_KEY_FOR_HS256
+      DB_USERNAME: finance_admin
+      DB_PASSWORD: 9mul3WIEevf_1ZP_mfwL5cS4ic3rZ2
+      JWT_SECRET: d1JuzitC9FPIxYsrSf1TIUXitgwmIwCeaUTAmSAUHU2Nef5RfvYDYH81L8Rt2iZ1
     ports:
       - "8081:8081"
     depends_on:

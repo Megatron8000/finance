@@ -41,13 +41,58 @@ import type { Account, AccountCreatePayload, Currency } from '../types/account';
 import { ACCOUNT_TYPE_LABELS, CURRENCY_META } from '../types/account';
 import type { Category } from '../types/category';
 import type { DailyStats, PieChartItem } from '../types/analytics';
-import type { TransactionType } from '../types/transaction';
+import type { Transaction, TransactionType, MergedTransfer } from '../types/transaction';
 import { today, daysAgo } from '../utils/date';
 import { formatMoney, toNumber } from '../utils/money';
 
 const FALLBACK_RATES_TO_RUB: Record<Currency, number> = {
     RUB: 1, USD: 90.00, CNY: 12.50, BYN: 28.00, AED: 24.50,
 };
+
+type JournalEntry = MergedTransfer | Transaction;
+
+function isTransfer(entry: JournalEntry): entry is MergedTransfer {
+    return 'kind' in entry && entry.kind === 'transfer';
+}
+
+function mergeTransfers(transactions: Transaction[]): JournalEntry[] {
+    const result: JournalEntry[] = [];
+    const used = new Set<string>();
+
+    for (const tx of transactions) {
+        if (used.has(tx.id)) continue;
+        if (tx.categoryName !== 'Перевод между счетами') {
+            result.push(tx);
+            continue;
+        }
+        const paired = tx.type === 'EXPENSE'
+            ? transactions.find((t) => t.id !== tx.id && !used.has(t.id) && t.categoryName === 'Перевод между счетами' && t.type === 'INCOME' && t.createdAt === tx.createdAt)
+            : transactions.find((t) => t.id !== tx.id && !used.has(t.id) && t.categoryName === 'Перевод между счетами' && t.type === 'EXPENSE' && t.createdAt === tx.createdAt);
+        if (paired) {
+            const expense = tx.type === 'EXPENSE' ? tx : paired;
+            const income = tx.type === 'INCOME' ? tx : paired;
+            result.push({
+                kind: 'transfer',
+                id: expense.id,
+                date: expense.createdAt ?? expense.transactionDate,
+                fromAccountName: expense.accountName ?? expense.accountId,
+                fromAccountCurrency: expense.accountCurrency,
+                fromAmount: expense.amount,
+                toAccountName: income.accountName ?? income.accountId,
+                toAccountCurrency: income.accountCurrency,
+                toAmount: income.amount,
+                comment: expense.comment,
+                expenseId: expense.id,
+                incomeId: income.id,
+            });
+            used.add(expense.id);
+            used.add(income.id);
+        } else {
+            result.push(tx);
+        }
+    }
+    return result;
+}
 
 function computeTotalBalanceRUB(accounts: Account[]): number {
     return accounts.reduce((sum, a) => sum + toNumber(a.balance) * FALLBACK_RATES_TO_RUB[a.currency], 0);
@@ -122,6 +167,7 @@ export const MainPage = () => {
     );
     const overviewTotalBalance = useMemo(() => computeTotalBalanceRUB(overviewFilteredAccounts), [overviewFilteredAccounts]);
     const savingsAccounts = useMemo(() => accounts.filter((a) => a.type === 'SAVINGS'), [accounts]);
+    const journalEntries = useMemo(() => mergeTransfers(transactions).reverse(), [transactions]);
 
     const handleCreateAccount = async (payload: AccountCreatePayload) => { await createAccount(payload); };
     const handleUpdateAccount = async (payload: AccountCreatePayload) => {
@@ -147,10 +193,11 @@ export const MainPage = () => {
         if (txDateFrom && txDateTo) void fetchTransactions(txDateFrom, txDateTo);
         void fetchAccounts();
     };
-    const handleDeleteTransaction = async (id: string) => {
+    const handleDeleteTransaction = async (id: string, pairedId?: string) => {
         const accepted = await confirmDelete.confirm();
         if (accepted) {
             await removeTransaction(id);
+            if (pairedId) await removeTransaction(pairedId);
             if (txDateFrom && txDateTo) void fetchTransactions(txDateFrom, txDateTo);
             void fetchAccounts();
         }
@@ -224,29 +271,50 @@ export const MainPage = () => {
                                 <Stack direction="row" spacing={1} alignItems="center">
                                     <TextField label="С" type="date" size="small" value={txDateFrom} onChange={(e) => setTxDateFrom(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ minWidth: 150 }} />
                                     <TextField label="По" type="date" size="small" value={txDateTo} onChange={(e) => setTxDateTo(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ minWidth: 150 }} />
-                                    <Chip label={`${transactions.length} записей`} color="primary" variant="outlined" />
+                                    <Chip label={`${journalEntries.length} записей`} color="primary" variant="outlined" />
                                 </Stack>
                             </Stack>
                             <Box sx={{ maxHeight: 480, overflow: 'auto' }}>
                                 {txLoading ? (
                                     <Typography color="text.secondary" textAlign="center">Загрузка...</Typography>
-                                ) : transactions.length === 0 ? (
+                                ) : journalEntries.length === 0 ? (
                                     <Typography color="text.secondary">Нет транзакций за выбранный период.</Typography>
                                 ) : (
                                     <Stack spacing={1}>
-                                        {transactions.map((tx) => (
-                                            <Box key={tx.id} sx={{ display: 'grid', gridTemplateColumns: '140px 1fr 1fr 80px 100px 40px', gap: 1, alignItems: 'center', border: 1, borderColor: 'divider', borderRadius: 1, px: 2, py: 1, fontSize: 14 }}>
-                                                <Typography variant="body2">{tx.createdAt ? tx.createdAt.replace('T', ' ').slice(0, 16) : tx.transactionDate}</Typography>
-                                                <Stack direction="row" spacing={0.5} alignItems="center">
-                                                    {tx.accountCurrency && <CurrencyFlag currency={tx.accountCurrency} size={16} />}
-                                                    <Typography variant="body2" noWrap>{tx.accountName ?? tx.accountId}</Typography>
-                                                </Stack>
-                                                <Typography variant="body2" noWrap>{tx.categoryName ?? tx.categoryId}</Typography>
-                                                <Chip label={tx.type === 'INCOME' ? 'Пополнение' : 'Расход'} size="small" color={tx.type === 'INCOME' ? 'success' : 'error'} variant="outlined" />
-                                                <Typography variant="body2" textAlign="right">{formatMoney(tx.amount, tx.accountCurrency)}</Typography>
-                                                <IconButton color="error" size="small" onClick={() => void handleDeleteTransaction(tx.id)}><DeleteOutlineIcon fontSize="small" /></IconButton>
-                                            </Box>
-                                        ))}
+                                        {journalEntries.map((entry) => {
+                                            if (isTransfer(entry)) {
+                                                return (
+                                                    <Box key={entry.id} sx={{ display: 'grid', gridTemplateColumns: '140px 1fr 80px 1fr 40px', gap: 1, alignItems: 'center', border: 1, borderColor: 'divider', borderRadius: 1, px: 2, py: 1, fontSize: 14 }}>
+                                                        <Typography variant="body2">{entry.date.replace('T', ' ').slice(0, 16)}</Typography>
+                                                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0 }}>
+                                                            {entry.fromAccountCurrency && <CurrencyFlag currency={entry.fromAccountCurrency} size={14} />}
+                                                            <Typography variant="body2" noWrap>{entry.fromAccountName}</Typography>
+                                                            <Typography variant="body2" color="text.secondary">→</Typography>
+                                                            {entry.toAccountCurrency && <CurrencyFlag currency={entry.toAccountCurrency} size={14} />}
+                                                            <Typography variant="body2" noWrap>{entry.toAccountName}</Typography>
+                                                        </Stack>
+                                                        <Chip label="Перевод" size="small" color="info" variant="outlined" />
+                                                        <Typography variant="body2" textAlign="right" noWrap>
+                                                            {formatMoney(entry.fromAmount, entry.fromAccountCurrency)} → {formatMoney(entry.toAmount, entry.toAccountCurrency)}
+                                                        </Typography>
+                                                        <IconButton color="error" size="small" onClick={() => void handleDeleteTransaction(entry.expenseId, entry.incomeId)}><DeleteOutlineIcon fontSize="small" /></IconButton>
+                                                    </Box>
+                                                );
+                                            }
+                                            return (
+                                                <Box key={entry.id} sx={{ display: 'grid', gridTemplateColumns: '140px 1fr 1fr 80px 100px 40px', gap: 1, alignItems: 'center', border: 1, borderColor: 'divider', borderRadius: 1, px: 2, py: 1, fontSize: 14 }}>
+                                                    <Typography variant="body2">{entry.createdAt ? entry.createdAt.replace('T', ' ').slice(0, 16) : entry.transactionDate}</Typography>
+                                                    <Stack direction="row" spacing={0.5} alignItems="center">
+                                                        {entry.accountCurrency && <CurrencyFlag currency={entry.accountCurrency} size={16} />}
+                                                        <Typography variant="body2" noWrap>{entry.accountName ?? entry.accountId}</Typography>
+                                                    </Stack>
+                                                    <Typography variant="body2" noWrap>{entry.categoryName ?? entry.categoryId}</Typography>
+                                                    <Chip label={entry.type === 'INCOME' ? 'Пополнение' : 'Расход'} size="small" color={entry.type === 'INCOME' ? 'success' : 'error'} variant="outlined" />
+                                                    <Typography variant="body2" textAlign="right">{formatMoney(entry.amount, entry.accountCurrency)}</Typography>
+                                                    <IconButton color="error" size="small" onClick={() => void handleDeleteTransaction(entry.id)}><DeleteOutlineIcon fontSize="small" /></IconButton>
+                                                </Box>
+                                            );
+                                        })}
                                     </Stack>
                                 )}
                             </Box>

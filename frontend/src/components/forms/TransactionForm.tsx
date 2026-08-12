@@ -1,4 +1,4 @@
-import { Alert, Button, Chip, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Button, Chip, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import { useState } from 'react';
@@ -22,9 +22,10 @@ interface TransactionFormProps {
 const transactionTypes: TransactionType[] = ['INCOME', 'EXPENSE', 'TRANSFER'];
 
 export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSubmit, onTransfer }: TransactionFormProps) => {
+    const defaultAccountId = accounts.find((a) => a.name === 'Зарплата')?.id ?? '';
     const { control, watch, handleSubmit, reset, setValue, formState: { isSubmitting } } = useForm<TransactionCreatePayload>({
         defaultValues: {
-            accountId: '',
+            accountId: defaultAccountId,
             categoryId: '',
             type: 'EXPENSE',
             amount: 0,
@@ -73,21 +74,20 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
     return (
         <Stack component="form" spacing={2} onSubmit={handleSubmit(async (values) => {
             if (isTransfer && onTransfer) {
-                const transferValues = values as TransactionCreatePayload & { toAccountId?: string };
                 await onTransfer({
                     fromAccountId: values.accountId,
-                    toAccountId: transferValues.toAccountId || '',
+                    toAccountId: values.categoryId,
                     amount: Number(values.amount),
                     transactionDate: values.transactionDate,
                     comment: values.comment?.trim() || null
                 });
-                reset({ accountId: '', categoryId: '', type, amount: 0, transactionDate: today(), comment: '', amountInRub: null });
+                reset({ accountId: defaultAccountId, categoryId: '', type, amount: 0, transactionDate: today(), comment: '', amountInRub: null });
                 return;
             }
             const comment = values.comment?.trim() || null;
             const amountInRub = showConversion && values.amountInRub ? Number(values.amountInRub) : null;
             await onSubmit({ ...values, amount: Number(values.amount), comment, amountInRub });
-            reset({ accountId: '', categoryId: '', type, amount: 0, transactionDate: today(), comment: '', amountInRub: null });
+            reset({ accountId: defaultAccountId, categoryId: '', type, amount: 0, transactionDate: today(), comment: '', amountInRub: null });
         })}>
             <Controller
                 name="type"
@@ -124,8 +124,9 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
                 <Controller
                     name="categoryId"
                     control={control}
-                    render={({ field }) => (
-                        <TextField {...field} select label="Счёт зачисления">
+                    rules={{ required: 'Выберите счёт зачисления' }}
+                    render={({ field, fieldState }) => (
+                        <TextField {...field} select label="Счёт зачисления" error={!!fieldState.error} helperText={fieldState.error?.message}>
                             {accounts.filter((a) => a.id !== accountId).map((account) => {
                                 const meta = CURRENCY_META[account.currency];
                                 return (
@@ -140,11 +141,6 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
                         </TextField>
                     )}
                 />
-            )}
-            {selectedAccount && !isTransfer && (
-                <Alert severity="info" sx={{ py: 0 }}>
-                    Валюта счёта: {currencyInfo?.flag} {currencyInfo?.label}
-                </Alert>
             )}
             {!isTransfer && (
                 <>

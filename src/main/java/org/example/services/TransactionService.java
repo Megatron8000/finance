@@ -126,6 +126,7 @@ public class TransactionService {
         Category transferCategory = categoryRepository.findByName("Перевод между счетами")
                 .orElseGet(() -> {
                     Category cat = new Category();
+                    cat.setId(UUID.randomUUID());
                     cat.setName("Перевод между счетами");
                     cat.setType(CategoryType.EXPENSE);
                     cat.setSystem(true);
@@ -154,16 +155,21 @@ public class TransactionService {
         incomeTx.setAccount(toAccount);
         incomeTx.setCategory(transferCategory);
         incomeTx.setType(TransactionType.INCOME);
-        incomeTx.setAmount(request.getAmount());
         incomeTx.setTransactionDate(txDate);
         incomeTx.setComment(request.getComment() != null ? request.getComment().trim() : null);
-        incomeTx.setAmountInRub(currencyService.convertToRub(request.getAmount(), toAccount.getCurrency(), txDate));
-        incomeTx.setExchangeRate(currencyService.getRateToRub(toAccount.getCurrency(), txDate));
         incomeTx.setDeleted(false);
         incomeTx.setCreatedAt(java.time.LocalDateTime.now());
 
         fromAccount.setBalance(fromAccount.getBalance().subtract(request.getAmount()));
-        toAccount.setBalance(toAccount.getBalance().add(request.getAmount()));
+
+        BigDecimal amountInRub = currencyService.convertToRub(request.getAmount(), fromAccount.getCurrency(), txDate);
+        BigDecimal amountInTargetCurrency = currencyService.convertToAccountCurrency(amountInRub, toAccount.getCurrency(), txDate);
+
+        incomeTx.setAmount(amountInTargetCurrency);
+        incomeTx.setAmountInRub(amountInRub);
+        incomeTx.setExchangeRate(currencyService.getRateToRub(toAccount.getCurrency(), txDate));
+
+        toAccount.setBalance(toAccount.getBalance().add(amountInTargetCurrency));
 
         accountRepository.save(fromAccount);
         accountRepository.save(toAccount);

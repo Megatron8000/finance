@@ -36,3 +36,18 @@ export interface TransferPayload {
     transactionDate: string;
     comment?: string | null;
 }
+
+export interface MergedTransfer {
+    kind: 'transfer';
+    id: string;
+    date: string;
+    fromAccountName: string;
+    fromAccountCurrency?: Currency;
+    fromAmount: string;
+    toAccountName: string;
+    toAccountCurrency?: Currency;
+    toAmount: string;
+    comment?: string | null;
+    expenseId: string;
+    incomeId: string;
+}

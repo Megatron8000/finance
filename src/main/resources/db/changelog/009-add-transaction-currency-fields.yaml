@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-add-transaction-currency-fields
+      author: finance-app
+      changes:
+        - addColumn:
+            tableName: transactions
+            columns:
+              - column:
+                  name: amount_in_rub
+                  type: DECIMAL(19,2)
+                  defaultValue: "0"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: exchange_rate
+                  type: DECIMAL(19,6)
+                  defaultValue: "1"
+                  constraints:
+                    nullable: false

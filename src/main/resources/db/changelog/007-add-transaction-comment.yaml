@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-add-transaction-comment
+      author: finance-app
+      changes:
+        - addColumn:
+            tableName: transactions
+            columns:
+              - column:
+                  name: comment_text
+                  type: VARCHAR(500)

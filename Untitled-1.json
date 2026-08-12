@@ -1,0 +1,16 @@
+curl --location 'http://10.241.42.38:8080' \
+--header 'Content-Type: application/json' \
+--data '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "setToggles",
+  "params": {
+    "toggles": [
+        {
+            "key": "otp_send_settings",
+            "value": "{\"provider\":\"rapporto\",\"channels\":{\"app\":\"sms\",\"web\":\"sms\",\"kiosk\":\"sms\",\"pos\":\"sms\"}}",
+            "service": true
+        }
+    ]
+  }
+}'

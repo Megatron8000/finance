@@ -28,6 +28,7 @@ services:
       DB_USERNAME: finance_admin
       DB_PASSWORD: 9mul3WIEevf_1ZP_mfwL5cS4ic3rZ2
       JWT_SECRET: d1JuzitC9FPIxYsrSf1TIUXitgwmIwCeaUTAmSAUHU2Nef5RfvYDYH81L8Rt2iZ1
+      CORS_ALLOWED_ORIGINS: https://fin-saver.ru,https://www.fin-saver.ru
     ports:
       - "8081:8081"
     depends_on:

@@ -54,30 +54,11 @@ public class TransactionService {
             txDate = LocalDate.now();
         }
 
-        if (request.getType() == TransactionType.INCOME && accountCurrency != Currency.RUB
-                && request.getAmountInRub() != null && request.getAmountInRub().compareTo(BigDecimal.ZERO) > 0) {
-
-            BigDecimal rate = currencyService.getRateToRub(accountCurrency, txDate);
-            BigDecimal convertedAmount = currencyService.convertToAccountCurrency(
-                    request.getAmountInRub(), accountCurrency, txDate);
-
-            request.setAmount(convertedAmount);
-        }
-
         Transaction tx = transactionMapper.toEntity(request, user, account, category);
 
         BigDecimal rate = currencyService.getRateToRub(accountCurrency, txDate);
         tx.setExchangeRate(rate);
-
-        if (request.getType() == TransactionType.INCOME) {
-            if (request.getAmountInRub() != null && request.getAmountInRub().compareTo(BigDecimal.ZERO) > 0) {
-                tx.setAmountInRub(request.getAmountInRub());
-            } else {
-                tx.setAmountInRub(currencyService.convertToRub(tx.getAmount(), accountCurrency, txDate));
-            }
-        } else {
-            tx.setAmountInRub(currencyService.convertToRub(tx.getAmount(), accountCurrency, txDate));
-        }
+        tx.setAmountInRub(currencyService.convertToRub(tx.getAmount(), accountCurrency, txDate));
 
         if (tx.getType() == TransactionType.EXPENSE) {
             if (account.getBalance().compareTo(tx.getAmount()) < 0) {

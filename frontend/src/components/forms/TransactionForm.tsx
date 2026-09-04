@@ -45,9 +45,8 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
     const filteredCategories = categories.filter((category) => category.type === (type === 'TRANSFER' ? 'EXPENSE' : type));
 
     const selectedAccount = accounts.find((a) => a.id === accountId);
-    const isForeignCurrency = selectedAccount && selectedAccount.currency !== 'RUB';
-    const showConversion = isForeignCurrency && type === 'INCOME';
     const currencyInfo = selectedAccount ? CURRENCY_META[selectedAccount.currency] : null;
+    const amountLabel = currencyInfo ? `Сумма в ${currencyInfo.symbol}` : 'Сумма';
 
     const isTransfer = type === 'TRANSFER';
 
@@ -85,8 +84,7 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
                 return;
             }
             const comment = values.comment?.trim() || null;
-            const amountInRub = showConversion && values.amountInRub ? Number(values.amountInRub) : null;
-            await onSubmit({ ...values, amount: Number(values.amount), comment, amountInRub });
+            await onSubmit({ ...values, amount: Number(values.amount), comment, amountInRub: null });
             reset({ accountId: defaultAccountId, categoryId: '', type, amount: 0, transactionDate: today(), comment: '', amountInRub: null });
         })}>
             <Controller
@@ -207,24 +205,6 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
                 </>
             )}
 
-            {showConversion && (
-                <Controller
-                    name="amountInRub"
-                    control={control}
-                    rules={{ required: 'Введите сумму в рублях', min: { value: 0.01, message: 'Сумма должна быть больше 0' } }}
-                    render={({ field, fieldState }) => (
-                        <TextField
-                            {...field}
-                            value={field.value ?? ''}
-                            type="number"
-                            label="Сумма пополнения в ₽ (RUB)"
-                            error={!!fieldState.error}
-                            helperText={fieldState.error?.message}
-                            inputProps={{ step: 0.01 }}
-                        />
-                    )}
-                />
-            )}
             <Controller
                 name="amount"
                 control={control}
@@ -233,20 +213,14 @@ export const TransactionForm = ({ accounts, categories, onCategoryCreated, onSub
                     <TextField
                         {...field}
                         type="number"
-                        label={showConversion ? `Сумма в ${currencyInfo?.symbol}` : 'Сумма'}
+                        label={amountLabel}
                         error={!!fieldState.error}
                         helperText={fieldState.error?.message}
                         inputProps={{ step: 0.01 }}
-                        slotProps={{ input: { readOnly: showConversion } }}
                         sx={{ '& input[type=number]::-webkit-inner-spin-button, & input[type=number]::-webkit-outer-spin-button': { WebkitAppearance: 'none', m: 0 }, '& input[type=number]': { MozAppearance: 'textfield' } }}
                     />
                 )}
             />
-            {showConversion && (
-                <Typography variant="body2" color="text.secondary">
-                    Сумма в валюте счёта рассчитывается автоматически по курсу ЦБ РФ
-                </Typography>
-            )}
             <Controller
                 name="transactionDate"
                 control={control}

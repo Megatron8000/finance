@@ -1,4 +1,5 @@
 ﻿import { create } from 'zustand';
+import { isAxiosError } from 'axios';
 import { authApi, type AuthPayload } from '../api/authApi';
 import { getStoredToken, setStoredToken } from '../api/axios';
 
@@ -13,9 +14,22 @@ interface AuthState {
     logout: () => void;
 }
 
+interface ApiErrorResponse {
+    message?: string;
+}
+
 // Преобразует неизвестную ошибку в строку для отображения в UI.
-const extractError = (error: unknown) =>
-    error instanceof Error ? error.message : 'Не удалось выполнить запрос';
+const extractAuthError = (error: unknown) => {
+    if (isAxiosError<ApiErrorResponse>(error)) {
+        if (error.response?.status === 401) {
+            return 'Неверный email или пароль';
+        }
+
+        return error.response?.data?.message || 'Не удалось выполнить запрос авторизации';
+    }
+
+    return error instanceof Error ? error.message : 'Не удалось выполнить запрос авторизации';
+};
 
 export const useAuthStore = create<AuthState>((set) => ({
     // Инициализация стора значениями из localStorage (если токен уже есть).
@@ -31,7 +45,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             setStoredToken(response.accessToken);
             set({ token: response.accessToken, isAuthenticated: true, isLoading: false });
         } catch (error) {
-            set({ error: extractError(error), isLoading: false });
+            set({ error: extractAuthError(error), isLoading: false });
             throw error;
         }
     },
@@ -43,7 +57,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             setStoredToken(response.accessToken);
             set({ token: response.accessToken, isAuthenticated: true, isLoading: false });
         } catch (error) {
-            set({ error: extractError(error), isLoading: false });
+            set({ error: extractAuthError(error), isLoading: false });
             throw error;
         }
     },

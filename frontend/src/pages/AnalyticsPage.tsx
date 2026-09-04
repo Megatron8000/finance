@@ -1,4 +1,4 @@
-import { Alert, Card, CardContent, Grid, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Card, CardContent, Grid, MenuItem, Stack, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { analyticsApi } from '../api/analyticsApi';
 import { DailyChart } from '../components/charts/DailyChart';
@@ -55,7 +55,6 @@ export const AnalyticsPage = () => {
                     <PieChart data={pieData} />
                 </Grid>
             </Grid>
-            <Typography color="text.secondary">Графики используют endpoints `/api/analytics/daily` и `/api/analytics/pie` с диапазоном дат.</Typography>
         </Stack>
     );
 };

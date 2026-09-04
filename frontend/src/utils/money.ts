@@ -20,3 +20,12 @@ export const formatMoney = (value: number | string, currency: Currency = 'RUB') 
 
 export const toNumber = (value: number | string) =>
     typeof value === 'number' ? value : Number.parseFloat(value || '0');
+
+export const formatCompactNumber = (value: number | string) => {
+    const amount = typeof value === 'string' ? Number(value) : value;
+
+    return new Intl.NumberFormat('ru-RU', {
+        notation: 'compact',
+        maximumFractionDigits: 1
+    }).format(Number.isFinite(amount) ? amount : 0);
+};

@@ -74,7 +74,7 @@ function mergeTransfers(transactions: Transaction[]): JournalEntry[] {
             result.push({
                 kind: 'transfer',
                 id: expense.id,
-                date: expense.createdAt ?? expense.transactionDate,
+                date: expense.transactionDate,
                 fromAccountName: expense.accountName ?? expense.accountId,
                 fromAccountCurrency: expense.accountCurrency,
                 fromAmount: expense.amount,
@@ -284,8 +284,8 @@ export const MainPage = () => {
                                         {journalEntries.map((entry) => {
                                             if (isTransfer(entry)) {
                                                 return (
-                                                    <Box key={entry.id} sx={{ display: 'grid', gridTemplateColumns: '140px 1fr 80px 1fr 40px', gap: 1, alignItems: 'center', border: 1, borderColor: 'divider', borderRadius: 1, px: 2, py: 1, fontSize: 14 }}>
-                                                        <Typography variant="body2">{entry.date.replace('T', ' ').slice(0, 16)}</Typography>
+                                                    <Box key={entry.id} sx={{ display: 'grid', gridTemplateColumns: '100px 1fr 80px 1fr 40px', gap: 1, alignItems: 'center', border: 1, borderColor: 'divider', borderRadius: 1, px: 2, py: 1, fontSize: 14 }}>
+                                                        <Typography variant="body2">{entry.date}</Typography>
                                                         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0 }}>
                                                             {entry.fromAccountCurrency && <CurrencyFlag currency={entry.fromAccountCurrency} size={14} />}
                                                             <Typography variant="body2" noWrap>{entry.fromAccountName}</Typography>
@@ -302,8 +302,8 @@ export const MainPage = () => {
                                                 );
                                             }
                                             return (
-                                                <Box key={entry.id} sx={{ display: 'grid', gridTemplateColumns: '140px 1fr 1fr 80px 100px 40px', gap: 1, alignItems: 'center', border: 1, borderColor: 'divider', borderRadius: 1, px: 2, py: 1, fontSize: 14 }}>
-                                                    <Typography variant="body2">{entry.createdAt ? entry.createdAt.replace('T', ' ').slice(0, 16) : entry.transactionDate}</Typography>
+                                                <Box key={entry.id} sx={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr 80px 100px 40px', gap: 1, alignItems: 'center', border: 1, borderColor: 'divider', borderRadius: 1, px: 2, py: 1, fontSize: 14 }}>
+                                                    <Typography variant="body2">{entry.transactionDate}</Typography>
                                                     <Stack direction="row" spacing={0.5} alignItems="center">
                                                         {entry.accountCurrency && <CurrencyFlag currency={entry.accountCurrency} size={16} />}
                                                         <Typography variant="body2" noWrap>{entry.accountName ?? entry.accountId}</Typography>
